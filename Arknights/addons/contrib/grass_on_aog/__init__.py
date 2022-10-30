@@ -168,7 +168,7 @@ def get_stage_with_action(action, my_items, t3_items):
 
 
 class GrassAddOn(AddonBase):
-    @custom_stage('grass', ignore_count=True, title='一键长草', description='检查库存中最少的蓝材料, 然后去 aog 上推荐的地图刷材料')
+    @custom_stage('grass', ignore_count=True, title='One button farming', description='Check depot for material with lowest count, then enter the operation recommended by ArkOneGraph')
     def run(self, *args):
         exclude_names = app.config.grass_on_aog.exclude
         self.logger.info('不刷以下材料: %r', exclude_names)

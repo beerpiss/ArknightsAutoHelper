@@ -278,7 +278,7 @@ class RecordAddon(AddonBase):
     def cli_record(self, argv):
         """
         record
-        操作记录模块，使用 record --help 查看帮助。
+        Record a custom operation. View record --help for more information.
         """
         import argparse
         parser = argparse.ArgumentParser(prog='record', description='操作记录模块')

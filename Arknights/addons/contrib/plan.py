@@ -15,7 +15,7 @@ class PlannerAddOn(AddonBase):
     def cli_arkplanner(self, argv):
         """
         arkplanner
-        输入材料需求创建刷图计划。使用 auto plan 命令执行刷图计划。
+        Enter material requirements to create a farming strategy, then use `auto plan` to execute it.
         """
         cache_time = arkplanner.get_cache_time()
         c = input('是否刷新企鹅物流缓存(缓存时间: %s)[y/N]:' % cache_time)
@@ -80,7 +80,7 @@ class PlannerAddOn(AddonBase):
             json.dump(save_data, f, indent=4, sort_keys=True)
         print('刷图计划已保存至: config/plan.json')
 
-    @custom_stage('plan', ignore_count=True, title='执行刷图计划', description='使用 arkplanner 命令创建刷图计划。执行过程会自动更新计划进度。')
+    @custom_stage('plan', ignore_count=True, title='执行刷图计划', description='Use Arkplanner to create a farming strategy')
     def run_plan(self, count):
         if not record_path.exists():
             self.logger.error('未能检测到刷图计划文件.')

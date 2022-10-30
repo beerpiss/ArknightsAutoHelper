@@ -7,7 +7,7 @@ import time
 
 session = requests_cache.CachedSession(str(app.cache_path / 'gamedata'), backend='filesystem', cache_control=True)
 
-baseurl = 'https://gh.cirno.xyz/raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/'
+baseurl = 'https://gh.cirno.xyz/raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/en_US/gamedata/excel/'
 
 _gamedata_version = ''
 _last_check = time.time() - 300

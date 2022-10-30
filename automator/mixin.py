@@ -103,9 +103,9 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
             if mse < minerr:
                 minerr = mse
             if not message_shown and t1-t0 > 10:
-                self.logger.info("等待画面静止")
+                self.logger.info("Waiting for the screen to be static")
         if raise_for_timeout:
-            raise RuntimeError("%d 秒内画面未静止，最小误差=%d，阈值=%d" % (timeout, minerr, threshold))
+            raise RuntimeError("Timed out waiting for the screen to be static: %d seconds, minimum error=%d, threshold=%d" % (timeout, minerr, threshold))
         return None
 
     def swipe_screen(self, move, rand=100, origin_x=None, origin_y=None):

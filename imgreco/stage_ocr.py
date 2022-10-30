@@ -192,7 +192,7 @@ def do_tag_ocr_dnn(img, noise_size=None, model_name='chars'):
     return predict_cv(img, noise_size, model_name)
 
 
-def do_img_ocr(pil_img):
+def do_img_ocr(pil_img, noise_size=None):
     img = pil_to_cv_gray_img(pil_img)
     # cv2.imshow('test', img)
     # cv2.waitKey()
@@ -200,7 +200,7 @@ def do_img_ocr(pil_img):
     thresh_mode = cv2.THRESH_BINARY_INV if img_avg > 127 else cv2.THRESH_BINARY
     img = cv2.threshold(img, 100, 255, thresh_mode)[1]
     remove_holes(img)
-    return do_tag_ocr(img)
+    return do_tag_ocr(img, noise_size)
 
 
 stage_icon1 = pil_to_cv_gray_img(resources.load_image('stage_ocr/stage_icon1.png'))

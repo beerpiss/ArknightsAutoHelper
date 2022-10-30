@@ -87,7 +87,7 @@ class RIICAddon(AddonBase):
         if self.match_roi('riic/overview', method='template_matching', screenshot=screenshot):
             return True
         if roi := self.match_roi('riic/pending', method='template_matching', screenshot=screenshot):
-            self.logger.info('取消待办事项')
+            self.logger.info('Cancelling pending items')
             self.tap_rect(roi.bbox)
             return True
         return False
@@ -98,13 +98,13 @@ class RIICAddon(AddonBase):
             return
         result = self.match_roi('riic/riic_entry', fixed_position=False, method='sift', mode='L')
         if result:
-            self.logger.info('进入基建')
+            self.logger.info('Accessing RIIC base')
             self.tap_quadrilateral(result.context.template_corners, post_delay=6)
         else:
             raise RuntimeError('failed to find riic entry')
         while not self.check_in_riic():
             self.delay(1)
-        self.logger.info('已进入基建')
+        self.logger.info('Already in RIIC base')
         
     def collect_all(self):
         self.enter_riic()
@@ -112,13 +112,13 @@ class RIICAddon(AddonBase):
         while count < 2:
             if roi := self.match_roi('riic/notification2', fixed_position=False, method='mse'):
                 while True:
-                    self.logger.info('发现蓝色通知')
+                    self.logger.info('Found blue notification')
                     self.tap_rect(roi.bbox)
                     if self.match_roi('riic/pending'):
                         break
                     self.logger.info('重试点击蓝色通知')
                 while roi := self.wait_for_roi('riic/collect_all2', timeout=2, fixed_position=False, method='mse'):
-                    self.logger.info('发现全部收取按钮')
+                    self.logger.info('Found collect all button')
                     rc = roi.bbox
                     rc.y = 93.704 * self.vh
                     rc.height = 5.833 * self.vh
@@ -126,15 +126,15 @@ class RIICAddon(AddonBase):
                     self.tap_rect(roi.bbox)
                 break
             else:
-                self.logger.info('未发现蓝色通知，等待 3 s')
+                self.logger.info('No blue notification found, waiting 3 seconds')
                 self.delay(3)
                 count += 1
-        self.logger.info('一键收取完成')
+        self.logger.info('One-click completion done')
 
     def recognize_layout(self):
         if not self.check_in_riic():
             raise RuntimeError('not here')
-        self.logger.info('正在识别基建布局')
+        self.logger.info('Identifying base layout')
         screenshot = self.screenshot()
         
         t0 = time.monotonic()
@@ -147,7 +147,7 @@ class RIICAddon(AddonBase):
         # roi = self.match_roi('riic/layout', fixed_position=False, method='sift', mode='L')
         self.logger.debug('%r', match)
         if match.M is None:
-            raise RuntimeError('未能识别基建布局')
+            raise RuntimeError('Failed to identify base layout')
         # discard rotation
         M = match.M
         scalex = np.sqrt(M[0,0] ** 2 + M[0,1] ** 2)
@@ -425,7 +425,7 @@ class RIICAddon(AddonBase):
             raise ValueError('invalid rect')
         self.tap_rect(rect)
         if self.check_in_riic():
-            self.logger.info('等待收取提示消失')
+            self.logger.info('Waiting for the collection button to disappear')
             self.delay(3)
             self.tap_rect(rect)
 
@@ -446,18 +446,18 @@ class RIICAddon(AddonBase):
                 if op.name in pending_operators:
                     pending_operators.remove(op.name)
                     if op.selected:
-                        self.logger.info(f'{op.name} 已选择')
+                        self.logger.info(f'{op.name} selected')
                     else:
-                        self.logger.info('选择干员：%s', op.name)
+                        self.logger.info('Selecting operator: %s', op.name)
                         self.tap_rect(op.box, post_delay=0)
                 else:
                     if op.selected:
-                        self.logger.info(f'取消选择: {op.name}')
+                        self.logger.info(f'Deselecting: {op.name}')
                         self.tap_rect(op.box, post_delay=0)
             if len(pending_operators) == 0:
                 break
         if pending_operators:
-            self.logger.warning('未发现干员：%r', pending_operators)
+            self.logger.warning('No operator found: %r', pending_operators)
 
     def iter_operator_list_pages(self, full_recognize=False):
         last_page_set = set()
@@ -501,11 +501,11 @@ class RIICAddon(AddonBase):
     def cli_riic(self, argv):
         """
         riic <subcommand>
-        基建功能（开发中）
+        Base functions (WIP)
         riic collect
-        收取制造站及贸易站
+        Collecting factory items and trading posts
         riic shift <room> <operator1> <operator2> ...
-        指定干员换班
+        Moving operator to room
         room: B101 B102 B103 B201 B202 B203 B301 B302 B303 dorm1 dorm2 dorm3 dorm4 meeting workshop office
         """
         if len(argv) == 1:

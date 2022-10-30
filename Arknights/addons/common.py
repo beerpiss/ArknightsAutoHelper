@@ -7,18 +7,18 @@ class CommonAddon(AddonBase):
         import imgreco.common
         import imgreco.main
         if extra_predicate is None:
-            self.logger.info("正在返回主页")
+            self.logger.info("Returning to home page")
             from Arknights.addons.record import RecordAddon
             self.addon(RecordAddon).try_replay_record('back_to_main', quiet=True)
         else:
-            self.logger.info("返回上层")
+            self.logger.info("Going back to home page")
         retry_count = 0
         max_retry = 3
         while True:
             screenshot = self.screenshot()
 
             if extra_predicate is not None and extra_predicate(screenshot):
-                self.logger.info('满足停止条件，停止导航')
+                self.logger.info('Stop conditions met, stopping navigation')
                 return
 
             if imgreco.main.check_main(screenshot):
@@ -26,7 +26,7 @@ class CommonAddon(AddonBase):
 
             # 检查是否有返回按钮
             if imgreco.common.check_nav_button(screenshot):
-                self.logger.info('发现返回按钮，点击返回')
+                self.logger.info('Finding the back button and tapping it')
                 self.tap_rect(imgreco.common.get_nav_button_back_rect(self.viewport), post_delay=2)
                 # 点击返回按钮之后重新检查
                 continue
@@ -70,4 +70,4 @@ class CommonAddon(AddonBase):
             self.logger.info('未知画面，尝试返回按钮 {}/{} 次'.format(retry_count, max_retry))
             self.control.input.send_key(4)  # KEYCODE_BACK
             self.delay(3)
-        self.logger.info("已回到主页")
+        self.logger.info("Returned to home page")

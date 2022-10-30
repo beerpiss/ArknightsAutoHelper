@@ -85,8 +85,8 @@ class MaterialPlanning(object):
             if drop['stageId'] not in stage_array:
                 stage_array.append(drop['stageId'])
         stage_dct_rv = {v: k for k, v in enumerate(stage_array)}
-        servers = ['CN']    # ['CN', 'US', 'JP', 'KR']
-        languages = ['zh']  # ['zh', 'en', 'ja', 'ko']
+        servers = ['US']    # ['CN', 'US', 'JP', 'KR']
+        languages = ['en']  # ['zh', 'en', 'ja', 'ko']
 
         valid_stages = {server: [False] * len(stage_array) for server in servers}
         stage_code = {server: ['' for _ in stage_array] for server in servers}
@@ -147,7 +147,7 @@ class MaterialPlanning(object):
 
         # 添加LS, CE, S4-6, S5-2等的掉落 及 默认龙门币掉落
         for k, stage in enumerate(self.stage_array):
-            self.probs_matrix[k, self.item_name_rv['龙门币']] = self.cost_lst[k] * 12
+            self.probs_matrix[k, self.item_name_rv['LMD']] = self.cost_lst[k] * 12
         self.update_droprate()
 
         # To build equavalence relationship from convert_rule_dct.
@@ -164,7 +164,7 @@ class MaterialPlanning(object):
             self.convertions_dct[rule['name']] = comp_dct
             for iname in comp_dct:
                 convertion[self.item_name_rv[iname]] -= comp_dct[iname]
-            convertion[self.item_name_rv['龙门币']] -= rule['goldCost']
+            convertion[self.item_name_rv['LMD']] -= rule['goldCost']
             convertion_matrix.append(copy.deepcopy(convertion))
 
             outc_dct = {outc['name']: outc['count'] for outc in rule['extraOutcome']}
@@ -308,9 +308,9 @@ class MaterialPlanning(object):
                 demand_lst[self.item_dct_rv[self.item_name_to_id[input_lang][k]]] = v
         if gold_demand:
             try:
-                demand_lst[self.item_name_rv['龙门币']] = 1e9 if gold_demand is True else int(gold_demand)
+                demand_lst[self.item_name_rv['LMD']] = 1e9 if gold_demand is True else int(gold_demand)
             except:
-                demand_lst[self.item_name_rv['龙门币']] = 1e9
+                demand_lst[self.item_name_rv['LMD']] = 1e9
         if exp_demand:
             try:
                 demand_lst[self.item_name_rv['作战记录']] = 1e9 if exp_demand is True else int(exp_demand)
@@ -323,7 +323,7 @@ class MaterialPlanning(object):
                 demand_lst[self.item_dct_rv[self.item_name_to_id[input_lang][k]]] -= v
 
         if gold_demand == False and exp_demand == True:
-            # 如果不需要龙门币 并 需要经验, 就删掉赤金到经验的转化
+            # 如果不需要LMD 并 需要经验, 就删掉赤金到经验的转化
             convertion_matrix = self.convertion_matrix[:-1]
             convertion_outc_matrix = self.convertion_outc_matrix[:-1]
             convertion_cost_lst = self.convertion_cost_lst[:-1]
@@ -387,8 +387,8 @@ class MaterialPlanning(object):
             group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True)
 
         cost = np.dot(x[:len(cost_lst)], cost_lst)
-        gcost = -np.dot(x[len(cost_lst):], convertion_matrix[:, self.item_name_rv['龙门币']])
-        gold = np.dot(n_looting, probs_matrix[:, self.item_name_rv['龙门币']])
+        gcost = -np.dot(x[len(cost_lst):], convertion_matrix[:, self.item_name_rv['LMD']])
+        gold = np.dot(n_looting, probs_matrix[:, self.item_name_rv['LMD']])
         exp = np.dot(n_looting, probs_matrix[:, self.item_name_rv['基础作战记录']]) * 200 + \
               np.dot(n_looting, probs_matrix[:, self.item_name_rv['初级作战记录']]) * 400 + \
               np.dot(n_looting, probs_matrix[:, self.item_name_rv['中级作战记录']]) * 1000 + \
@@ -400,7 +400,7 @@ class MaterialPlanning(object):
                 stage_name = stage_array[i]
                 if self.is_gold_or_exp(stage_name):
                     cost -= t * cost_lst[i]
-                    gold -= t * probs_matrix[i, self.item_name_rv['龙门币']]
+                    gold -= t * probs_matrix[i, self.item_name_rv['LMD']]
                     exp -= t * (probs_matrix[i, self.item_name_rv['基础作战记录']] * 200 +
                                 probs_matrix[i, self.item_name_rv['初级作战记录']] * 400 +
                                 probs_matrix[i, self.item_name_rv['中级作战记录']] * 1000 +
@@ -480,14 +480,14 @@ class MaterialPlanning(object):
         return self.stage_code['CN'][self.stage_dct_rv[stage_name]][:2] in ['LS', 'CE']
 
     def update_droprate(self):
-        self.update_droprate_processing('S4-6', '龙门币', 3228)
-        self.update_droprate_processing('S5-2', '龙门币', 2484)
-        self.update_droprate_processing('S6-4', '龙门币', 2700, 'update')
-        self.update_droprate_processing('CE-1', '龙门币', 1700, 'update')
-        self.update_droprate_processing('CE-2', '龙门币', 2800, 'update')
-        self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
-        self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
-        self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
+        self.update_droprate_processing('S4-6', 'LMD', 3228)
+        self.update_droprate_processing('S5-2', 'LMD', 2484)
+        self.update_droprate_processing('S6-4', 'LMD', 2700, 'update')
+        self.update_droprate_processing('CE-1', 'LMD', 1700, 'update')
+        self.update_droprate_processing('CE-2', 'LMD', 2800, 'update')
+        self.update_droprate_processing('CE-3', 'LMD', 4100, 'update')
+        self.update_droprate_processing('CE-4', 'LMD', 5700, 'update')
+        self.update_droprate_processing('CE-5', 'LMD', 7500, 'update')
         self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
         self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
         self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
@@ -497,7 +497,7 @@ class MaterialPlanning(object):
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
             target_item: (item, itemCount)
-            cost: number of 龙门币
+            cost: number of LMD
             source_item: {item: itemCount}
             extraOutcome: {outcome: {item: weight}, rate, totalWeight}
         '''
@@ -540,7 +540,7 @@ class MaterialPlanning(object):
         self.stage_array.append(code)
         self.stage_dct_rv.update({code: len(self.stage_array) - 1})
         self.cost_lst = np.append(self.cost_lst, cost)
-        servers = ['CN']    # ['CN', 'US', 'JP', 'KR']
+        servers = ['US']    # ['CN', 'US', 'JP', 'KR']
         for server in servers:
             self.stage_code[server].append(stage_name)
             self.valid_stages[server].append(True)
@@ -616,7 +616,7 @@ def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
         with open(save_path_rules, 'w') as outfile:
             json.dump(convertion_rules, outfile)
 
-    url_aog = 'https://arkonegraph.herokuapp.com/total/CN'
+    url_aog = 'https://arkonegraph.herokuapp.com/total/EN'
     req = urllib.request.Request(url_aog, None, headers)
     with urllib.request.urlopen(req, timeout=5) as response:
         response = urllib.request.urlopen(req)

@@ -1,0 +1,27 @@
+version = "1.0.0.0"
+update_page = "https://github.com/beerpiss/ArknightsAutoHelper/releases/tag/bootstrapper-release"
+release_manifest_url = "https://api.github.com/repos/beerpiss/ArknightsAutoHelper/releases"
+
+[[package]]
+name = "app"
+tag = "bootstrapper-package-app"
+asset_name = "app-cp39.zip"
+extract_base = ".bootstrapper"
+
+[[package]]
+name = "runtime"
+tag = "bootstrapper-package-runtime"
+asset_name = "runtime-cp39-win_amd64.zip"
+extract_base = ".bootstrapper\\runtime"
+
+[[package]]
+name = "vendor"
+tag = "bootstrapper-package-vendor"
+asset_name = "vendor.zip"
+extract_base = ".bootstrapper"
+
+[[package]]
+name = "template"
+tag = "bootstrapper-package-template"
+asset_name = "template.zip"
+extract_base = "."

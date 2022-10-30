@@ -131,10 +131,10 @@ def main():
         def toggle(handler):
             toggle.status = not toggle.status
             onoff = 'ON' if toggle.status else 'OFF'
-            handler.label = '<r>切换自动补充理智(%s)' % onoff
+            handler.label = '<r> Toggle automatic sanity refill (%s)' % onoff
         toggle.status = True
-        enterhandler = KeyHandler('<ENTER>跳过', b'\r', enter)
-        togglehandler = KeyHandler('<r>切换自动补充理智(ON)', b'r', toggle)
+        enterhandler = KeyHandler('<ENTER> to skip', b'\r', enter)
+        togglehandler = KeyHandler('<r> Toggle automatic sanity refill (ON)', b'r', toggle)
         dummyskip = KeyHandler('           ', b'', lambda _: None)
         print('hello')
         time.sleep(2)

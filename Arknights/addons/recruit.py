@@ -4,11 +4,11 @@ class RecruitAddon(AddonBase):
     def recruit(self):
         import imgreco.recruit
         from . import recruit_calc
-        self.logger.info('识别招募标签')
+        self.logger.info('Identifying recruitment tags')
         tags = imgreco.recruit.get_recruit_tags(self.screenshot())
-        self.logger.info('可选标签：%s', ' '.join(tags))
+        self.logger.info('Tags found: %s', ' '.join(tags))
         if len(tags) != 5:
-            self.logger.warning('识别到的标签数量异常，一共识别了%d个标签', len(tags))
+            self.logger.warning('Not enough tags (only %d out of 5) were identified.', len(tags))
         result = recruit_calc.calculate(tags)
         self.logger.debug('计算结果：%s', repr(result))
         return result
@@ -17,7 +17,7 @@ class RecruitAddon(AddonBase):
     def cli_recruit(self, argv):
         """
         recruit [tags ...]
-        公开招募识别/计算，不指定标签则从截图中识别
+        Automatically calculate recruitment tags
         """
         from . import recruit_calc
 
@@ -28,7 +28,7 @@ class RecruitAddon(AddonBase):
             with self.helper.frontend.context:
                 result = self.recruit()
         else:
-            print('要素过多')
+            print('Too many tags')
             return 1
 
         colors = ['\033[36m', '\033[90m', '\033[37m', '\033[32m', '\033[93m', '\033[91m']

@@ -366,9 +366,9 @@ class ADBController(Controller):
                         self._screenshot_adapter = agent_client
                     except io.UnsupportedOperation:
                         if self.device_info.emulator_hypervisor:
-                            logger.warning('当前模拟器不支持 aah-agent 截图。如果模拟器显示卡死，请重启模拟器并尝试切换渲染模式，或在设置中关闭 aah-agent 截图。', exc_info=True)
+                            logger.warning('The emulator does not support aah-agent screenshots. If the emulator is freezing, change rendering mode in settings and restart the emulator, or turn off aah-agent screenshots in config.', exc_info=True)
                         else:
-                            logger.warning('当前设备不支持 aah-agent 截图。如果设备显示卡死，请重启设备并在设置中关闭 aah-agent 截图。', exc_info=True)
+                            logger.warning('The device does not support aah-agent screenshots. If the device is freezing, reboot the device and disable aah-agent screenshots in the config.', exc_info=True)
                         self.device_config.save()
                     except:
                         logger.debug('failed to open aah-agent screenshot connection', exc_info=True)
@@ -439,7 +439,7 @@ class ADBController(Controller):
         # sleep(1)
         x1, y1, x2, y2 = origin[0], origin[1], origin[0] + movement[0], origin[1] + movement[1]
 
-        logger.debug("滑动初始坐标:({},{}); 移动距离dX:{}, dy:{}".format(*origin, *movement))
+        logger.debug("swiping: initial coordinates:({},{}); distance moved dX:{}, dy:{}".format(*origin, *movement))
         if duration is None:
             duration = 1000
         self.input.touch_swipe(x1, y1, x2, y2, duration / 1000)
@@ -455,7 +455,7 @@ class ADBController(Controller):
             final_X = XY[0] + randint(-1, 1)
             final_Y = XY[1] + randint(-1, 1)
         # 如果你遇到了问题，可以把这百年输出并把日志分享到群里。
-        logger.debug("点击坐标:({},{})".format(final_X, final_Y))
+        logger.debug("tap coordinates:({},{})".format(final_X, final_Y))
         self.input.touch_tap(final_X, final_Y)
 
 def _test():

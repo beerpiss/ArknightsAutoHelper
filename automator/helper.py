@@ -39,7 +39,7 @@ class BaseAutomator(AddonMixin):
         if frontend is None:
             frontend = DummyFrontend()
 
-        logger.debug("成功初始化模块")
+        logger.debug("Successfully initialized the module")
 
 
     def addon(self, cls: Union[ForwardRef[Type[TAddon]], Type[TAddon]]) -> TAddon:

@@ -11,8 +11,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 app.init()
+game_data_server_mapping = {
+    'US': 'en_US',
+    'JP': 'ja_JP',
+    'KO': 'ko_KR',
+    'CN': 'zh_CN',
+    'TW': 'zh_TW',
+}
 game_data_url = app.get('game_data_url', 'https://gh.cirno.xyz/raw.githubusercontent.com'
-                                         '/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel')
+                                         f'/Kengxxiao/ArknightsGameData/master/{game_data_server_mapping[app.config.server]}/gamedata/excel')
 
 
 def get_cache_path(cache_file_name):
@@ -91,7 +98,7 @@ def load_aog_data(force_update: bool = None, cache_key='%Y--%V'):
     if force_update is None:
         force_update = _check_is_need_to_force_update('aog_data', cache_key) \
                        or not get_cache_path('aog_cache.json').exists()
-    url = 'https://arkonegraph.herokuapp.com/total/CN'
+    url = 'https://arkonegraph.herokuapp.com/total/EN'
     data = load_net_json_cache('aog_cache.json', url, 'utf-8', force_update)
     if force_update:
         update_common_cache_by_cache_time_key('aog_data', cache_key)

@@ -43,7 +43,7 @@ class ShellNextFrontend:
         if not self.use_status_line:
             time.sleep(secs)
             return
-        skiphandler = fancywait.KeyHandler('<ENTER>跳过', b'\r', skipcallback)
+        skiphandler = fancywait.KeyHandler('<ENTER> to skip', b'\r', skipcallback)
         skipdummy   = fancywait.KeyHandler('           ', b'', lambda x: None)
         fancywait.fancy_delay(secs, self.statusline, [skiphandler if allow_skip else skipdummy])
     def request_device_connector(self):
@@ -101,8 +101,8 @@ def _connect_device(newdevice):
 def connect(argv):
     """
     connect [connector type] [connector args ...]
-        连接到设备
-        支持的设备类型：
+        Connect to a device
+        Supported connection types:
         connect adb <serial or tcpip endpoint>
         connect ident [identifier]
     """

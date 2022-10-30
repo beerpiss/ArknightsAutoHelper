@@ -7,20 +7,20 @@
           <b-card title="Arknights Auto Helper" :sub-title="version" class="status-card">
             <b-input-group class="mt-3">
               <b-input-group-prepend is-text>
-                <b-icon icon="plug-fill" />设备
+                <b-icon icon="plug-fill" />Device
               </b-input-group-prepend>
               <b-input-group-append class="flex-grow-1">
                 <b-dropdown ref="device_dropdown" :text="deviceName" right class="flex-grow-1">
-                  <b-dropdown-item disabled><b>可用设备</b></b-dropdown-item>
+                  <b-dropdown-item disabled><b>Available devices</b></b-dropdown-item>
                   <b-dropdown-item v-for="(name, index) in availiableDevices" v-bind:key="index" @click="connectDevice('list:'+index)">{{name}}</b-dropdown-item>
                   <b-dropdown-divider/>
-                  <b-dropdown-item v-b-modal.connect-device>连接设备</b-dropdown-item>
+                  <b-dropdown-item v-b-modal.connect-device>Connect another device...</b-dropdown-item>
                 </b-dropdown>
               </b-input-group-append>
             </b-input-group>
 
-            <div class="mt-3">任务队列
-              <div class="float-right" v-b-tooltip.hover title="移除选中项">
+            <div class="mt-3">Task queue
+              <div class="float-right" v-b-tooltip.hover title="Remove selected items">
                   <b-button size="sm" variant="outline-danger" :disabled="selectedPendingJob.length == 0" @click="dequeueSelectedJobs"><b-icon-trash/></b-button>
               </div>
             </div>
@@ -31,8 +31,8 @@
               @click="toggleQueueState"
               ><b-icon 
               :icon="canPauseJob ? 'pause-fill' : 'play-fill'"
-              />{{canPauseJob ? '暂停' : (appRunning ? '继续' : '启动')}}队列</b-button>
-            <div class="mt-3">运行状态</div>
+              />{{canPauseJob ? 'Pause' : (appRunning ? 'Continue' : 'Start')}} queue</b-button>
+            <div class="mt-3">Status</div>
             <b-input-group>
               <b-input-group-prepend is-text>
                 <b-icon icon="arrow-right"/>
@@ -47,30 +47,30 @@
               </b-input-group-prepend>
                 <b-form-input readonly :value="timerText"></b-form-input>
               <b-input-group-append>
-                <b-button variant="info" title="跳过当前等待时间" :disabled="!(appRunning && workerWaiting && allowSkipWait)" @click="skipWait"><b-icon-skip-forward-fill/></b-button>
-                <b-button variant="outline-danger" title="停止助手" :disabled="!appRunning" @click="interruptWorker"><b-icon-x-octagon size="sm"/></b-button>
+                <b-button variant="info" title="Skip current wait" :disabled="!(appRunning && workerWaiting && allowSkipWait)" @click="skipWait"><b-icon-skip-forward-fill/></b-button>
+                <b-button variant="outline-danger" title="Stop helper" :disabled="!appRunning" @click="interruptWorker"><b-icon-x-octagon size="sm"/></b-button>
               </b-input-group-append>
             </b-input-group>
             <template v-if="debug">
               <b-form-checkbox v-model="appRunning">app running</b-form-checkbox>
               <b-form-checkbox v-model="workerWaiting">worker waiting</b-form-checkbox>
               <b-form-checkbox v-model="allowSkipWait">allow skip wait</b-form-checkbox>
-              <button @click="loots.push(['至纯源石', 1919])">add loot</button>
+              <button @click="loots.push(['Originite Prime', 1919])">add loot</button>
             </template>
           </b-card>
         </b-col>
         <b-col sm xl="6">
           <b-card-group columns class="ml-md-3 mx-lg-3">
-            <b-card title="快速启动" class="action-card">
+            <b-card title="Quick Start" class="action-card">
               <b-form class="mt-3">
-                <b-form-group label="关卡" label-for="navigate-option" label-cols="2" label-cols-xl="12" >
+                <b-form-group label="Operation" label-for="navigate-option" label-cols="2" label-cols-xl="12" >
                   <b-form-radio-group id="navigate-option" v-model="onStage" buttons button-variant="outline-secondary" size="sm">
-                    <b-form-radio value="current">当前关卡</b-form-radio>
-                    <b-form-radio value="navigate">指定关卡</b-form-radio>
+                    <b-form-radio value="current">Current</b-form-radio>
+                    <b-form-radio value="navigate">Custom</b-form-radio>
                     <b-button v-if="onStage == 'navigate'" variant="outline-secondary" v-b-modal.choose-stage>{{choosedStage}}</b-button>
                   </b-form-radio-group>
                 </b-form-group>
-                  <b-form-group label="次数" label-for="repeat-count" label-cols="2"  label-cols-xl="12" >
+                  <b-form-group label="Repeat count" label-for="repeat-count" label-cols="2"  label-cols-xl="12" >
                     <div class="d-flex flex-row align-items-center">
                       <b-form-input id="repeat-count" v-model="repeatCount" min="0" max="9999" type="number" style="width: 5em"></b-form-input>
                       <b-button-group size="sm" class="ml-2">
@@ -81,13 +81,13 @@
                       </b-button-group>
                     </div>
                   </b-form-group>
-                  <b-form-checkbox v-model="refillWithItem" name="" switch>使用道具回复体力</b-form-checkbox>
-                  <b-form-checkbox v-model="refillWithOriginium" name="" switch class="mt-1">使用源石回复体力</b-form-checkbox>
-                  <b-form-group size="sm" label="最多回复" label-for="refill-count" label-cols="4" >
+                  <b-form-checkbox v-model="refillWithItem" name="" switch>Use potions to restore sanity</b-form-checkbox>
+                  <b-form-checkbox v-model="refillWithOriginium" name="" switch class="mt-1">Use Originite Prime to restore sanity</b-form-checkbox>
+                  <b-form-group size="sm" label="Restore at max" label-for="refill-count" label-cols="4" >
                     <div class="d-flex flex-row align-items-center">
-                      <b-form-input size="sm" id="refill-count" v-model="maxRefillCount" min="0" max="9999" type="number" style="width: 5em"></b-form-input>次
+                      <b-form-input size="sm" id="refill-count" v-model="maxRefillCount" min="0" max="9999" type="number" style="width: 5em"></b-form-input>times
                       <b-button-group size="sm" class="ml-2">
-                        <b-button variant="outline-secondary" @click="maxRefillCount=9; refillWithItem=true" v-b-tooltip.hover title="每周获得的理智药剂数量" >9</b-button>
+                        <b-button variant="outline-secondary" @click="maxRefillCount=9; refillWithItem=true" v-b-tooltip.hover title="Number of sanity potions obtained per week" >9</b-button>
                         <b-button variant="outline-secondary" @click="maxRefillCount--" :disabled="maxRefillCount==0">－</b-button>
                         <b-button variant="outline-secondary" @click="maxRefillCount++; refillWithItem=true">＋</b-button>
                         <b-button variant="outline-secondary" @click="maxRefillCount=9999; refillWithItem=true">∞</b-button>
@@ -105,7 +105,7 @@
               </template>
             </b-card>
 
-            <b-card title="领取任务奖励" class="action-card">
+            <b-card title="Collect mission rewards" class="action-card">
               <template #footer>
                 <div class="clearfix">
                   <b-button-group class="float-right">
@@ -116,7 +116,7 @@
               </template>
             </b-card>
 
-            <b-card title="公开招募计算" class="action-card">
+            <b-card title="Calculate recruitment tags" class="action-card">
               <template #footer>
                 <div class="clearfix">
                   <b-button :disabled="appRunning" class="float-right" @click="recruit">Go</b-button>
@@ -126,7 +126,7 @@
           </b-card-group>
         </b-col>
         <b-col sm md="12" xl="3">
-          <b-card header="战利品" class="status-card">
+          <b-card header="Drops" class="status-card">
             <div class="d-flex flex-row flex-wrap align-content-start">
               <div class="item-container" v-for="[name, qty] in loots" v-bind:key="name+'x'+qty" v-b-tooltip.hover :title="name">
                 <b-img class="item-icon" :alt="name"  :src="serverbase + 'itemimg/' + encodeURIComponent(name) + '.png'" /><b-badge class="item-qty-badge">{{qty}}</b-badge>
@@ -145,17 +145,17 @@
       <div id="status-line" @click="toggleConsole">
         <b-button size="sm" squared><b-icon :icon="consoleExpanded ? 'chevron-bar-down' : 'chevron-bar-up'"/></b-button><div id="last-console-line" class="ml-2"><span class="align-middle">{{lastConsoleLine}}</span></div></div>
       </div>
-  <b-modal id="connect-device" title="连接设备" @ok="confirmConnectDevice">
-    TODO 协议: adb
+  <b-modal id="connect-device" title="Enter device" @ok="confirmConnectDevice">
+    TODO protocol: adb
     <b-form-input v-model.lazy="deviceToConnect"></b-form-input>
   </b-modal>
 
-  <b-modal id="choose-stage" title="选择关卡" @show="chooseStageShown" @ok="chooseStageConfirm">
+  <b-modal id="choose-stage" title="Select operation" @show="chooseStageShown" @ok="chooseStageConfirm">
     TODO
     <b-form-input v-model.lazy="newChoosedStage"></b-form-input>
   </b-modal>
 
-  <b-modal id="recruit-modal" title="公开招募" v-model="showRecruitResult">
+  <b-modal id="recruit-modal" title="Recruitment" v-model="showRecruitResult">
     <template v-for="tagGroup in recruitResult">
       <template v-if="tagGroup[1].length > 0">
         <div v-bind:key="tagGroup[0].join(',')">
@@ -181,6 +181,7 @@
 
 <script>
 import Vue from 'vue'
+// eslint-disable-next-line no-unused-vars
 import Component from 'vue-class-component'
 import { IconsPlugin } from 'bootstrap-vue'
 
@@ -198,6 +199,7 @@ function isVisible(domElement, root=null) {
 }
 
 @Component
+// eslint-disable-next-line no-unused-vars
 export default class App extends Vue {
   debug = false
   serverbase = ''
@@ -221,7 +223,7 @@ export default class App extends Vue {
   selectedPendingJob = []
   consoleExpanded = false
   lastConsoleLine = "shit"
-  currentJobTitle = "空闲"
+  currentJobTitle = "Idle"
   pendingJobs = []
   alerts = []
   showRecruitResult = false
@@ -346,11 +348,11 @@ export default class App extends Vue {
 
   getQuickStartJob() {
     let result = {value: "Job@"+(+new Date()), text: "", action: []}
-    let stageText = this.onStage === 'current' ? '当前关卡' : '['+this.choosedStage+']'
+    let stageText = this.onStage === 'current' ? 'Current operation' : '['+this.choosedStage+']'
     let count = parseInt(this.repeatCount)
     let title = stageText + '×' + count
-    if (this.refillWithItem) title += " 使用道具"
-    if (this.refillWithOriginium) title += " 使用源石"
+    if (this.refillWithItem) title += " using potions"
+    if (this.refillWithOriginium) title += " using Originite Prime"
     result.text = title
     result.action.push({name: "worker:set_refill_with_item", args: [this.refillWithItem]})
     result.action.push({name: "worker:set_refill_with_originium", args: [this.refillWithOriginium]})
@@ -367,7 +369,7 @@ export default class App extends Vue {
   }
 
   getCollectJob() {
-    return {value: "Job@"+(+new Date()), text: "领取任务奖励", action: [{name: "worker:clear_task", args: []}]}
+    return {value: "Job@"+(+new Date()), text: "Receiving mission rewards", action: [{name: "worker:clear_task", args: []}]}
   }
 
   async goJob(job, isQueuedJob=false) {
@@ -462,7 +464,7 @@ export default class App extends Vue {
 
   setAppIdle() {
     this.appRunning = false
-    this.currentJobTitle = '空闲'
+    this.currentJobTitle = 'Idle'
   }
 
   onReceived(obj) {

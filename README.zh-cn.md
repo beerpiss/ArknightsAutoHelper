@@ -1,16 +1,13 @@
 # ![icon](webgui2/public/carrot.png) Arknights Auto Helper
 
-This is a port for the Arknights EN server. Mostly translated using DeepL, so it might not make the most sense.
+明日方舟辅助脚本
 
-It can automatically:
-- Repeat operations and restore sanity, ~~easy for farming rocks~~
-  - Identify drops and upload to [Penguin Statistics](https://penguin-stats.io)
-- Select operation
-- Claim mission rewards
-- Calculate recruitment tag.
-
-
-Everything below is in Chinese, I'm lazy, have fun with a translator
+功能说明：
+- 自动重复刷图，使用理智药、碎石
+  - 识别掉落物品，上传企鹅物流数据统计
+- 自动选图（从主界面开始到关卡信息界面）
+- 自动领取任务奖励
+- 公开招募识别
 
 ## 0x01 运行须知
 

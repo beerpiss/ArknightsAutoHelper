@@ -135,16 +135,16 @@ class StageNavigator(AddonBase):
             recoresult = imgreco.map.recognize_map(screenshot, partition)
             if recoresult is None:
                 # TODO: retry
-                self.logger.error('未能定位关卡地图')
+                self.logger.error('Failed to locate level')
                 raise RuntimeError('recognition failed')
             if target in recoresult:
                 pos = recoresult[target]
-                self.logger.info('目标 %s 坐标: %s', target, pos)
+                self.logger.info('Target %s, coordinate: %s', target, pos)
                 if lastpos is not None and tuple(pos) == tuple(lastpos):
-                    self.logger.error('拖动后坐标未改变')
-                    raise RuntimeError('拖动后坐标未改变')
+                    self.logger.error('Coordinate did not change after dragging')
+                    raise RuntimeError('Coordinate did not change after dragging')
                 if 0 < pos[0] < self.viewport[0]:
-                    self.logger.info('目标在可视区域内，点击')
+                    self.logger.info('Target is in visible area, tapping')
                     self.control.touch_tap(pos, offsets=(5, 5))
                     self.delay(3)
                     break
@@ -153,14 +153,14 @@ class StageNavigator(AddonBase):
                     originX = self.viewport[0] // 2 + randint(-100, 100)
                     originY = self.viewport[1] // 2 + randint(-100, 100)
                     if pos[0] < 0:  # target in left of viewport
-                        self.logger.info('目标在可视区域左侧，向右拖动')
+                        self.logger.info('Target is to the left of the visible area, drag to the right')
                         # swipe right
                         diff = -pos[0]
                         if abs(diff) < 100:
                             diff = 120
                         diff = min(diff, self.viewport[0] - originX)
                     elif pos[0] > self.viewport[0]:  # target in right of viewport
-                        self.logger.info('目标在可视区域右侧，向左拖动')
+                        self.logger.info('The target is to the right of the visible area, drag to the left')
                         # swipe left
                         diff = self.viewport[0] - pos[0]
                         if abs(diff) < 100:
@@ -180,7 +180,7 @@ class StageNavigator(AddonBase):
         from resources.imgreco.map_vectors import ep2region, region2ep
         target_region = ep2region.get(target)
         if target_region is None:
-            self.logger.error(f'未能定位章节区域, target: {target}')
+            self.logger.error(f'Failed to locate chapter, target: {target}')
             raise RuntimeError('recognition failed')
         vw, vh = imgreco.common.get_vwvh(self.viewport)
         episode_tag_rect = tuple(map(int, (34.861*vh, 40.139*vh, 50.139*vh, 43.194*vh)))
@@ -192,23 +192,23 @@ class StageNavigator(AddonBase):
         while True:
             screenshot = self.screenshot()
             current_episode_tag = screenshot.crop(episode_tag_rect)
-            current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag)
-            self.logger.info(f'当前章节: {current_episode_str}')
+            current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag, 1)
+            self.logger.info(f'Current chapter: {current_episode_str}')
             if not current_episode_str.startswith('EPISODE'):
-                self.logger.error(f'章节识别失败, current_episode_str: {current_episode_str}')
+                self.logger.error(f'Failed recognizing chapter, current_episode_str: {current_episode_str}')
                 raise RuntimeError('recognition failed')
-            current_episode = int(current_episode_str[7:])
+            current_episode = int(current_episode_str[-2:])
             current_region = ep2region.get(current_episode)
             if current_region is None:
-                self.logger.error(f'未能定位章节区域, current_episode: {current_episode}')
+                self.logger.error(f'Failed locating chapter, current_episode: {current_episode}')
                 raise RuntimeError('recognition failed')
             if current_region == target_region:
                 break
             if current_region > target_region:
-                self.logger.info(f'前往上一章节区域')
+                self.logger.info(f'Going to previous act')
                 self.tap_rect(prev_ep_region_rect)
             else:
-                self.logger.info(f'前往下一章节区域')
+                self.logger.info(f'Going to next act')
                 self.tap_rect(next_ep_region_rect)
         while current_episode != target:
             move = min(abs(current_episode - target), 2) * episode_move * (1 if current_episode > target else -1)
@@ -216,11 +216,11 @@ class StageNavigator(AddonBase):
             self.delay(0.5)
             screenshot = self.screenshot()
             current_episode_tag = screenshot.crop(episode_tag_rect)
-            current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag)
-            self.logger.info(f'当前章节: {current_episode_str}')
-            current_episode = int(current_episode_str[7:])
+            current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag, 1)
+            self.logger.info(f'Current chapter: {current_episode_str}')
+            current_episode = int(current_episode_str[-2:])
 
-        self.logger.info(f'进入章节: {current_episode_str}')
+        self.logger.info(f'Going to chapter: {current_episode_str}')
         self.tap_rect(current_ep_rect)
 
     def find_and_tap_stage_by_ocr(self, partition, target, partition_map=None):
@@ -236,12 +236,12 @@ class StageNavigator(AddonBase):
             if not tags_map:
                 tags_map = imgreco.stage_ocr.recognize_all_screen_stage_tags(screenshot, allow_extra_icons=True)
                 if not tags_map:
-                    self.logger.error('未能定位关卡地图')
+                    self.logger.error('Failed locating level')
                     raise RuntimeError('recognition failed')
             self.logger.debug('tags map: ' + repr(tags_map))
             pos = tags_map.get(target)
             if pos:
-                self.logger.info('目标在可视区域内，点击')
+                self.logger.info('Operation in visible area, tapping')
                 self.control.touch_tap(pos, offsets=(5, 5))
                 self.delay(1)
                 return
@@ -253,12 +253,12 @@ class StageNavigator(AddonBase):
             move = randint(self.viewport[0] // 4, self.viewport[0] // 3)
 
             if all(x > target_index for x in known_indices):
-                self.logger.info('目标在可视区域左侧，向右拖动')
+                self.logger.info('Target is to the left of the visible area, dragging to the right')
             elif all(x < target_index for x in known_indices):
                 move = -move
-                self.logger.info('目标在可视区域右侧，向左拖动')
+                self.logger.info('The target is to the right of the visible area, dragging to the left')
             else:
-                self.logger.error('未能定位关卡地图')
+                self.logger.error('Failed locating operation')
                 raise RuntimeError('recognition failed')
             self.control.touch_swipe2((originX, originY), (move, max(250, move // 2)))
             self.delay(1)
@@ -269,7 +269,7 @@ class StageNavigator(AddonBase):
         recoresult = imgreco.map.recognize_daily_menu(screenshot, partition)
         if target in recoresult:
             pos, conf = recoresult[target]
-            self.logger.info('目标 %s 坐标=%s 差异=%f', target, pos, conf)
+            self.logger.info('Target %s, coordinates=%s difference=%f', target, pos, conf)
             offset = self.viewport[1] * 0.12  ## 24vh * 24vh range
             self.tap_rect((*(pos - offset), *(pos + offset)))
         else:
@@ -277,13 +277,13 @@ class StageNavigator(AddonBase):
                 originX = self.viewport[0] // 2 + randint(-100, 100)
                 originY = self.viewport[1] // 2 + randint(-100, 100)
                 if partition == 'material':
-                    self.logger.info('目标可能在可视区域左侧，向右拖动')
+                    self.logger.info('The target may be to the left of the visible area, drag to the right')
                     offset = self.viewport[0] * 0.2
                 elif partition == 'soc':
-                    self.logger.info('目标可能在可视区域右侧，向左拖动')
+                    self.logger.info('The target may be to the right of the visible area, drag to the left')
                     offset = -self.viewport[0] * 0.2
                 else:
-                    self.logger.error('未知类别')
+                    self.logger.error('Unknown category')
                     raise StopIteration()
                 self.control.touch_swipe2((originX, originY), (offset, 0), 400)
                 self.delay(2)
@@ -303,7 +303,7 @@ class StageNavigator(AddonBase):
         import imgreco.map
         path = get_stage_path(stage)
         self.addon(CommonAddon).back_to_main()
-        self.logger.info('进入作战')
+        self.logger.info('Entering operation')
         self.tap_quadrilateral(imgreco.main.get_ballte_corners(self.screenshot()))
         self.delay(TINY_WAIT)
         if path[0] == 'main':
@@ -312,7 +312,7 @@ class StageNavigator(AddonBase):
             self.find_and_tap_episode_by_ocr(int(path[1][2:]))
             self.find_and_tap_stage_by_ocr(path[1], path[2])
         elif path[0] == 'material' or path[0] == 'soc':
-            self.logger.info('选择类别')
+            self.logger.info('Selecting category')
             self.tap_rect(imgreco.map.get_daily_menu_entry(self.viewport, path[0]))
             self.find_and_tap_daily(path[0], path[1])
             self.find_and_tap_stage_by_ocr(path[1], path[2])
@@ -326,24 +326,24 @@ class StageNavigator(AddonBase):
         if self.is_stage_supported(c_id):
             self.goto_stage(c_id)
         else:
-            self.logger.error('不支持的关卡：%s', c_id)
+            self.logger.error('Unsupported level: %s', c_id)
             raise ValueError(c_id)
         return self.addon(CombatAddon).combat_on_current_stage(set_count, c_id)
 
     def main_handler(self, task_list: Sequence[tuple[str, int]]):
         if len(task_list) == 0:
-            self.logger.fatal("任务清单为空!")
+            self.logger.fatal("Task list is empty!")
             return
 
         for c_id, count in task_list:
-            self.logger.info("开始 %s", c_id)
+            self.logger.info("Starting %s", c_id)
             if c_id in _custom_stage_registry:
                 record = _custom_stage_registry[c_id]
                 record.func(self.addon(record.owner), count)
             else:
                 flag = self.navigate_and_combat(c_id, count)
 
-        self.logger.info("任务清单执行完毕")
+        self.logger.info("Completed task list")
 
     def parse_target_desc(self, args):
         result = []
@@ -360,7 +360,7 @@ class StageNavigator(AddonBase):
                     continue
             else:
                 if not self.is_stage_supported(current):
-                    raise ValueError('不支持的关卡：%s' % current)
+                    raise ValueError('Unsupported levels: %s' % current)
             try:
                 count_str = next(it)
                 count = int(count_str)
@@ -375,9 +375,9 @@ class StageNavigator(AddonBase):
     def cli_auto(self, argv):
         """
         auto [+-rR[N]] TARGET_DESC [TARGET_DESC]...
-        按顺序挑战指定关卡。
-        TARGET_DESC 可以是：
-            1-7 10\t特定主线、活动关卡（1-7）10 次
+        Enter given operations in order.
+        TARGET_DESC can be：
+            1-7 10\tdoing 1-7 10 times
         """
         ops = _parse_opt(argv)
         arglist = argv[1:]

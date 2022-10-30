@@ -7,7 +7,7 @@ class InventoryAddon(AddonBase):
         import imgreco.inventory
 
         self.addon(CommonAddon).back_to_main()
-        self.logger.info("进入仓库")
+        self.logger.info("Accessing depot")
         self.tap_rect(imgreco.inventory.get_inventory_rect(self.viewport))
 
         items = []
@@ -25,7 +25,7 @@ class InventoryAddon(AddonBase):
             screen_item_ids = set([item['itemId'] for item in screen_items])
             screen_items_map = {item['itemId']: item['quantity'] for item in screen_items}
             if last_screen_items is not None and not screen_item_ids - last_screen_items:
-                self.logger.info("读取完毕")
+                self.logger.info("Finished reading")
                 break
             if show_item_name:
                 name_map = {item['itemName']: item['quantity'] for item in screen_items}

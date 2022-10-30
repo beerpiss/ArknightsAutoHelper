@@ -40,10 +40,10 @@ ReportResult.NotReported =ReportResult()
 
 class PenguinStatsReporter:
     GROUP_NAME_TO_TYPE_MAP = {
-        '常规掉落': 'NORMAL_DROP',
-        '特殊掉落': 'SPECIAL_DROP',
-        '额外物资': 'EXTRA_DROP',
-        '幸运掉落': 'FURNITURE',
+        'Regular Drops': 'NORMAL_DROP',
+        'Special Drops': 'SPECIAL_DROP',
+        'Extra Drops': 'EXTRA_DROP',
+        'Lucky Drops': 'FURNITURE',
     }
 
     def __init__(self):
@@ -68,11 +68,11 @@ class PenguinStatsReporter:
         if self.logged_in:
             return True
         try:
-            logger.info('登录企鹅数据，userID=%s', userid)
+            logger.info('Signing in to Penguin Statistics, userID=%s', userid)
             resp = self.client.post(api_endpoint('/PenguinStats/api/v2/users'), data=str(userid))
             resp.raise_for_status()
         except: 
-            logger.error('登录失败', exc_info=1)
+            logger.error('Login failed', exc_info=1)
             return False
         self.set_login_state_with_response(resp)
         return True
@@ -81,17 +81,17 @@ class PenguinStatsReporter:
         if self.initialized is not None:
             return self.initialized
         if app.version == 'UNKNOWN':
-            logger.warn('无法获取程序版本，请通过 git clone 下载源代码')
-            logger.warn('为避免产生统计偏差，已禁用汇报功能')
+            logger.warn('Program version unavailable, please download the source code using git')
+            logger.warn('Reporting has been disabled to avoid statistical bias')
             self.noop = True
             self.initialized = False
             return True
         try:
-            logger.info('载入企鹅数据资源...')
+            logger.info('Loading Penguin Statistics resources...')
             self.update_penguin_data()
             self.initialized = True
         except:
-            logger.error('载入企鹅数据资源出错', exc_info=True)
+            logger.error('Error loading Penguin Statistics resources', exc_info=True)
             self.initialized = False
         return self.initialized
 
@@ -100,7 +100,7 @@ class PenguinStatsReporter:
         for s in stages:
             self.stage_map[s['code']] = s
         for i in items:
-            if i.get('itemType') == 'RECRUIT_TAG':
+            if i.get('itemType') == 'RECRUIT_TAG' or not i['existence'][app.config.server]['exist']:
                 continue
             self.item_map[i['itemId']] = i
             self.item_name_map[i['name']] = i
@@ -112,8 +112,8 @@ class PenguinStatsReporter:
         extra_recognized_item_ids.remove(None)
         unrecognized_items.difference_update(extra_recognized_item_ids)
         if unrecognized_items:
-            logger.warn('企鹅数据中存在未识别的物品：%s', ', '.join(unrecognized_items))
-            logger.warn('为避免产生统计偏差，已禁用汇报功能')
+            logger.warn('Unrecognized items were found in Penguin Statistics data: %s', ', '.join(unrecognized_items))
+            logger.warn('Reporting has been disabled to avoid statistical bias')
             self.noop = True
 
     def update_penguin_data(self):
@@ -128,28 +128,28 @@ class PenguinStatsReporter:
     def report(self, recoresult: EndOperationResult):
         if self.initialize() == False or self.noop:
             return ReportResult.NotReported
-        logger.info('向企鹅数据汇报掉落')
+        logger.info('Reporting drops to Penguin Statistics')
         if recoresult.stars != (True, True, True):
-            logger.info('不汇报非三星过关掉落')
+            logger.info('Only 3-star clears can be reported')
             return ReportResult.NotReported
         if recoresult.low_confidence:
-            logger.info('不汇报低置信度识别结果')
+            logger.info('Not reporting low-confidence results')
             return ReportResult.NotReported
 
         code = recoresult.operation
 
         self.update_penguin_data()
         if code not in self.stage_map:
-            logger.info('企鹅数据无此关卡：%s', code)
+            logger.info('Penguin Statistics do not have this level: %s', code)
             return ReportResult.NothingToReport
         stage = self.stage_map[code]
 
         if not stage.get('dropInfos'):
-            logger.info('关卡 %s 目前无掉落信息，不进行汇报', code)
+            logger.info('No drop information is available for %s, not reporting', code)
             return ReportResult.NothingToReport
         logger.debug('%r', stage['dropInfos'])
         if sum(1 for drop in stage['dropInfos'] if drop.get('itemId', None) != 'furni') == 0:
-            logger.info('关卡 %s 目前无除家具外掉落，不进行汇报', code)
+            logger.info('No drops for %s is available except furniture, not reporting', code)
             return ReportResult.NothingToReport
 
         itemgroups = recoresult.items
@@ -162,39 +162,40 @@ class PenguinStatsReporter:
             report_special_item = app.config.combat.penguin_stats.report_special_item
             for item in flattenitems:
                 if item[1].item_type == 'special_report_item' and not report_special_item:
-                    logger.error('掉落中包含特殊汇报的物品, 请前往企鹅物流阅读相关说明, 符合条件后可以将配置中的 '
-                                 'reporting/report_special_item 改为 true 汇报掉落')
-                    raise RuntimeError('不汇报特殊物品.')
+                    logger.error('Please go to Penguin Statistics to read reporting instructions, and change the '
+                                 'reporting/report_special_items configuration key to true to report the drop after '
+                                 'conditions are met')
+                    raise RuntimeError('Special items are not reported.')
         except:
-            logger.error('处理活动道具时出错', exc_info=True)
+            logger.error('Error handling event items', exc_info=True)
             return ReportResult.NotReported
         typeddrops: list[ArkDrop] = []
         dropinfos = stage['dropInfos']
         for itemdef in flattenitems:
             groupname, item = itemdef
-            if groupname == '首次掉落':
-                logger.info('不汇报首次掉落')
+            if groupname == 'First Clear':
+                logger.info('First clears cannot be reported')
                 return ReportResult.NotReported
-            if '龙门币' in groupname:
+            if 'LMD' in groupname:
                 continue
-            if groupname == '幸运掉落':
+            if groupname == 'Lucky Drops':
                 typeddrops.append(ArkDrop(dropType='FURNITURE', itemId='furni', quantity=1))
                 continue
 
             droptype = PenguinStatsReporter.GROUP_NAME_TO_TYPE_MAP.get(groupname, None)
             if droptype is None:
-                logger.warning("不汇报包含 %s 分组的掉落数据", groupname)
+                logger.warning("Not reporting drops in %s group", groupname)
                 return ReportResult.NotReported
 
             if item.item_id in stage.get('recognitionOnly', []):
-                logger.debug('不汇报识别结果中的物品（recognitionOnly）：%s', item.item_id)
+                logger.debug('Not reporting recognized items (recognitionOnly): %s', item.item_id)
                 continue
             if item.item_type == 'special_report_item' and app.config.combat.penguin_stats.report_special_item:
                 penguin_item = self.item_name_map.get(item.name, None)
             else:
                 penguin_item = self.item_map.get(item.item_id, None)
             if penguin_item is None:
-                logger.warning("%s 不在企鹅数据物品列表内", item.name)
+                logger.warning("%s is not in the list of Penguin Statistics items", item.name)
                 return ReportResult.NotReported
             itemid = penguin_item['itemId']
             if itemdef not in exclude_from_validation:
@@ -202,17 +203,17 @@ class PenguinStatsReporter:
                 if filterresult:
                     dropinfo4item = filterresult[0]
                     if not _check_in_bound(dropinfo4item['bounds'], item.quantity):
-                        logger.error('物品 %r 数量不符合企鹅数据验证规则', item)
+                        logger.error('Item %s does not meet Penguin Statistics validation rules', item)
                         return ReportResult.NotReported
                 else:
-                    logger.warning('物品 %s: %r 缺少验证规则', groupname, item)
+                    logger.warning('Item is missing validation rules: %s: %r', groupname, item)
             typeddrops.append(ArkDrop(dropType=droptype, itemId=itemid, quantity=item.quantity))
 
         for groupinfo in dropinfos:
              if groupinfo.get('itemId', None) is None:
                 kinds = sum(1 for x in typeddrops if x['dropType'] == groupinfo['dropType'])
                 if not _check_in_bound(groupinfo['bounds'], kinds):
-                    logger.error('分组 %s 内物品种类数量（%d）不符合企鹅数据验证规则', groupinfo['dropType'], kinds)
+                    logger.error('The number of items (%d) in group %s does not meet Penguin Statistics validation rules', kinds, groupinfo['dropType'])
                     return ReportResult.NotReported
 
         from imgreco.itemdb import model_timestamp
@@ -238,11 +239,11 @@ class PenguinStatsReporter:
             if not self.logged_in:
                 userid = self.set_login_state_with_response(resp)
                 if userid is not None:
-                    logger.info('企鹅数据用户 ID: %s', userid)
+                    logger.info('Penguin Statistics User ID: %s', userid)
                     app.config.combat.penguin_stats.uid = userid
                     app.save()
-                    logger.info('已写入配置文件')
+                    logger.info('Written to configuration file.')
             return ReportResult.Ok(resp.json().get('reportHash'))
         except:
-            logger.error('汇报失败', exc_info=True)
+            logger.error('Report failed', exc_info=True)
         return ReportResult.NotReported

@@ -18,6 +18,6 @@ def fuck(fontname, fontsize, text, savefile):
 
 
 if __name__ == "__main__":
-    names = ('常规掉落', '额外物资', '特殊掉落', '幸运掉落', '首次掉落', '报酬', '理智返还', '1.2倍声望&龙门币奖励', '1.0倍声望&龙门币奖励')
+    names = ('Regular Drops', 'Extra Drops', 'Special Drops', 'Lucky Drops', 'First Clear', 'Reward', 'Sanity refunded', '1.2 x EXP & LMD', '1.0 x EXP & LMD')
     for name in names:
         fuck(r'D:\projects\akimgreco\NotoSansCJKsc-Medium.otf', 25, name, name + '.png')

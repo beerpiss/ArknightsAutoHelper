@@ -98,21 +98,21 @@ def get_quantity(itemimg):
         from .ocr import acquire_engine_global_cached
         eng = acquire_engine_global_cached('zh-cn')
         from imgreco.ocr import OcrHint
-        result = eng.recognize(numimg, char_whitelist='0123456789.万', tessedit_pageseg_mode='13',
+        result = eng.recognize(numimg, char_whitelist='0123456789.K', tessedit_pageseg_mode='13',
                                hints=[OcrHint.SINGLE_LINE])
         qty_text = result.text
         richlogger.logtext(f'{qty_text=}')
         try:
             try:
-                qty_base = float(qty_text.replace(' ', '').replace('万', ''))
+                qty_base = float(qty_text.replace(' ', '').replace('K', ''))
             except:
                 from . import itemdb
-                qty_minireco, score = itemdb.num_recognizer.recognize2(numimg4legacy, subset='0123456789.万')
+                qty_minireco, score = itemdb.num_recognizer.recognize2(numimg4legacy, subset='0123456789.K')
                 richlogger.logtext(f'{qty_minireco=}, {score=}')
                 if score > 0.2:
                     qty_text = qty_minireco
-                    qty_base = float(qty_text.replace('万', ''))
-            qty_scale = 10000 if '万' in qty_text else 1
+                    qty_base = float(qty_text.replace('K', ''))
+            qty_scale = 1000 if 'K' in qty_text else 1
             return int(qty_base * qty_scale)
         except:
             return None
@@ -160,7 +160,7 @@ def tell_item(itemimg, with_quantity=True, learn_unrecognized=False) -> Recogniz
             richlogger.logtext('no match')
             low_confidence = True
             item_id = None
-            name = '未知物品'
+            name = 'Unknown item'
 
     if item_id is None and learn_unrecognized:
         name = itemdb.add_item(itemimg)

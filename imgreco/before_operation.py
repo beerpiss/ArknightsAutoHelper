@@ -15,13 +15,12 @@ logger = get_logger(__name__)
 
 @lru_cache(1)
 def load_data():
-    reco = minireco.MiniRecognizer(resources.load_pickle('minireco/NotoSansCJKsc-Medium.dat'))
-    reco2 = minireco.MiniRecognizer(resources.load_pickle('minireco/Novecentosanswide_Normal.dat'))
-    return (reco, reco2)
+    reco = minireco.MiniRecognizer(resources.load_pickle('minireco/NuberNext-DemiBoldCondensed.dat'))
+    return reco
 
 
 def ocr_stage_id(img):
-    # reco_Noto, reco_Novecento = load_data()
+    # reco, reco_Novecento = load_data()
     # print(reco_Novecento.recognize(img))
     from imgreco.minireco import split_chars
     from imgreco.stage_ocr import predict_char_images
@@ -57,7 +56,7 @@ def recognize(img):
     *_, template, style = delegate_match.roi_name.split('_')
     delegated = template == 'checked'
     logger.logtext(f'{delegated=}, {style=}')
-    reco_Noto, reco_Novecento = load_data()
+    reco = load_data()
     check_consume_ap = False
     if style == 'legacy':
         # old layout
@@ -84,7 +83,7 @@ def recognize(img):
         ap_rect = (100*vw-24.630*vh, 4.259*vh, 100*vw-9.259*vh, 8.611*vh)
         def stage_reco(img):
             from .ocr import acquire_engine_global_cached
-            engine = acquire_engine_global_cached('zh-cn')
+            engine = acquire_engine_global_cached('en-us')
             img = imgops.invert_color(img)
             return engine.recognize(img, tessedit_char_whitelist='SN-0123456789', tessedit_pageseg_mode='13').text.replace(' ', '')
 
@@ -108,7 +107,7 @@ def recognize(img):
     apimg = img.crop(ap_rect).convert('L')
     apimg = imgops.enhance_contrast(apimg, 80, 255)
     logger.logimage(apimg)
-    aptext, _ = reco_Noto.recognize2(apimg, subset='0123456789/')
+    aptext, _ = reco.recognize2(apimg, subset='0123456789/')
     logger.logtext(aptext)
     # print("AP:", aptext)
 
@@ -133,7 +132,7 @@ def recognize(img):
     consumeimg = img.crop(consumerect).convert('L')
     consumeimg = imgops.enhance_contrast(consumeimg, 80, 255)
     logger.logimage(consumeimg)
-    consumetext, minscore = reco_Noto.recognize2(consumeimg, subset='-0123456789')
+    consumetext, minscore = reco.recognize2(consumeimg, subset='-0123456789')
     consumetext = ''.join(c for c in consumetext if c in '0123456789')
     logger.logtext('{}, {}'.format(consumetext, minscore))
 
@@ -164,10 +163,10 @@ def recognize_interlocking(img):
     consume_ap = imgops.compare_region_mse(img, (100*vw-31.944*vh, 2.407*vh, 100*vw-25.648*vh, 8.426*vh), 'before_operation/interlocking/ap_icon.png', logger=logger)
 
     apimg = img.crop((100*vw-25.278*vh, 2.407*vh, 100*vw-10.093*vh, 8.426*vh)).convert('L')
-    reco_Noto, reco_Novecento = load_data()
+    reco = load_data()
     apimg = imgops.enhance_contrast(apimg, 80, 255)
     logger.logimage(apimg)
-    aptext, _ = reco_Noto.recognize2(apimg, subset='0123456789/')
+    aptext, _ = reco.recognize2(apimg, subset='0123456789/')
     logger.logtext(aptext)
 
     delegated = imgops.compare_region_mse(img, (100*vw-32.963*vh, 78.333*vh, 100*vw-5.185*vh, 84.167*vh), 'before_operation/interlocking/delegation_checked.png', logger=logger)
@@ -175,7 +174,7 @@ def recognize_interlocking(img):
     consumeimg = img.crop((100*vw-11.944*vh, 94.259*vh, 100*vw-5.185*vh, 97.500*vh)).convert('L')
     consumeimg = imgops.enhance_contrast(consumeimg, 80, 255)
     logger.logimage(consumeimg)
-    consumetext, minscore = reco_Noto.recognize2(consumeimg, subset='-0123456789')
+    consumetext, minscore = reco.recognize2(consumeimg, subset='-0123456789')
     consumetext = ''.join(c for c in consumetext if c in '0123456789')
     logger.logtext('{}, {}'.format(consumetext, minscore))
 

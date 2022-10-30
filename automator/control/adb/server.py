@@ -66,7 +66,7 @@ def ensure_adb_alive(server: ADBServer):
     start_adb_server(server)
 
 def start_adb_server(server: ADBServer):
-    logger.info('尝试启动 adb server')
+    logger.info('attempting to start adb server')
     import subprocess
     import app
     adbbin = app.config.device.adb_binary
@@ -98,7 +98,7 @@ def start_adb_server(server: ADBServer):
             # wait for the newly started ADB server to probe emulators
             time.sleep(0.5)
             if check_adb_alive(server):
-                logger.info('已启动 adb server')
+                logger.info('activated adb server')
                 return
         except FileNotFoundError:
             pass

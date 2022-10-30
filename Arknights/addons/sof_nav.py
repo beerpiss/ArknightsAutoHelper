@@ -47,17 +47,17 @@ class ShipOfFoolsNavigator(AddonBase):
             if match := self.match_roi('maps/sof/glan_faro'):
                 break
             if match := self.match_roi('maps/sof/banner', fixed_position=False, method='sift'):
-                self.logger.info('进入活动首页')
+                self.logger.info('Going to Event')
                 self.tap_rect(match.bbox, post_delay=3)
             count += 1
             if count > 10:
-                raise RuntimeError('导航失败')
+                raise RuntimeError('Failed navigating')
 
         target_section = stage_to_section[stage_code]
         section_rects = {1: match.bbox, 2: self.load_roi('maps/sof/section2').bbox, 3: self.load_roi('maps/sof/section3').bbox}
 
         while True:
-            self.logger.info('进入活动关卡')
+            self.logger.info('Entering event operation')
             self.tap_rect(section_rects[target_section])
             if not self.match_roi('maps/sof/glan_faro'):
                 break
@@ -82,11 +82,11 @@ class ShipOfFoolsNavigator(AddonBase):
                 stage_code_img = imgops.invert_color(stage_code_img)
                 stage_code_img = imgops.pad(stage_code_img, 6, value=255)
                 self.richlogger.logimage(stage_code_img)
-                stage_code_ocr = ocr.acquire_engine_global_cached('zh-cn').recognize(stage_code_img, tessedit_pageseg_mode='13', tessedit_char_whitelist='SNTR-0123456789')
+                stage_code_ocr = ocr.acquire_engine_global_cached('en-us').recognize(stage_code_img, tessedit_pageseg_mode='13', tessedit_char_whitelist='SNTR-0123456789')
                 self.richlogger.logtext(stage_code_ocr)
                 cv2.rectangle(tm, (x-4, y-4), (x+4, y+4), max_val, -1)
                 current_page_stages[stage_code_ocr.text.replace(' ', '')] = Rect.from_xywh(x, y - 80, passed_icon.template.width, 80).scale(scale)
-            self.logger.info('当前画面关卡: %r', current_page_stages)
+            self.logger.info('Current levels on screen: %r', current_page_stages)
             if stage_code in current_page_stages:
                 self.tap_rect(current_page_stages[stage_code], post_delay=1)
                 break
@@ -97,7 +97,7 @@ class ShipOfFoolsNavigator(AddonBase):
                 elif swipe_count < 5:
                     self.swipe_left()
                 else:
-                    raise RuntimeError('未找到关卡')
+                    raise RuntimeError('Level not found')
                 continue
             # if target_section != stage_to_section[next(iter(current_page_stages))]:
             #     self.logger.info('跳转到第 %d 层', target_section)
@@ -108,13 +108,13 @@ class ShipOfFoolsNavigator(AddonBase):
             target_index = section_map.index(stage_code)
             known_indices = [section_map.index(x) for x in current_page_stages.keys()]
             if all(x > target_index for x in known_indices):
-                self.logger.info('目标在可视区域左侧，向右拖动')
+                self.logger.info('The level is to the left of the visible area, dragging to the right')
                 self.swipe_right()
             elif all(x < target_index for x in known_indices):
-                self.logger.info('目标在可视区域右侧，向左拖动')
+                self.logger.info('The level is to the right of the visible area, dragging to the left')
                 self.swipe_left()
             else:
-                self.logger.error('未能定位关卡地图')
+                self.logger.error('Failed locating level')
                 raise RuntimeError('recognition failed')
 
 

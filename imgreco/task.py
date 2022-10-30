@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 @lru_cache(1)
 def load_data():
-    reco = minireco.MiniRecognizer(resources.load_pickle('minireco/NotoSansCJKsc-Medium.dat'))
+    reco = minireco.MiniRecognizer(resources.load_pickle('minireco/NuberNext-DemiBoldCondensed.dat'))
     return reco
 
 

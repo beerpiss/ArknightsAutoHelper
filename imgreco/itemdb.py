@@ -81,15 +81,15 @@ def update_net():
             return
     except:
         pass
-    logger.info('检查物品识别模型更新')
-    resp = retry_get('https://gh.cirno.xyz/raw.githubusercontent.com/triwinds/arknights-ml/master/inventory/gen_time.txt')
+    logger.info('Checking for model updates')
+    resp = retry_get('https://raw.githubusercontent.com/beerpiss/arknights-ml/master/inventory/gen_time.txt')
     remote_time = int(resp.text)
     if remote_time > local_cache_time:
         from datetime import datetime
-        logger.info(f'更新物品识别模型, 模型生成时间: {datetime.fromtimestamp(remote_time/1000).strftime("%Y-%m-%d %H:%M:%S")}')
+        logger.info(f'Item recognition model updated, update time: {datetime.fromtimestamp(remote_time/1000).strftime("%Y-%m-%d %H:%M:%S")}')
         with open(material_model_gen_time_file, 'w', encoding='utf-8') as f:
             json.dump(remote_time, f, ensure_ascii=False)
-        resp = retry_get('https://gh.cirno.xyz/raw.githubusercontent.com/triwinds/arknights-ml/master/inventory/ark_material.onnx')
+        resp = retry_get('https://raw.githubusercontent.com/beerpiss/arknights-ml/master/inventory/ark_material.onnx')
         with open(net_file, 'wb') as f:
             f.write(resp.content)
     else:
@@ -119,7 +119,7 @@ def load():
         img = resources.load_image(index, 'RGB')
         _update_mat_collection(resources_itemmats, name, img)
 
-    model = resources.load_pickle('minireco/NotoSansCJKsc-DemiLight-nums.dat')
+    model = resources.load_pickle('minireco/NuberNext-DemiBoldCondensed.dat')
     reco = minireco.MiniRecognizer(model, minireco.compare_ccoeff)
     num_recognizer=reco
 
@@ -169,7 +169,7 @@ def add_item(image) -> str:
     date = time.strftime('%Y-%m-%d')
     index = add_item.last_index + 1
     while True:
-        name = '未知物品-%s-%d' % (date, index)
+        name = 'UNKNOWN-%s-%d' % (date, index)
         filename = app.extra_items_path.joinpath(name + '.png')
         if not os.path.exists(filename):
             break

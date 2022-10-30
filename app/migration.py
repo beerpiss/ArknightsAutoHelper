@@ -34,7 +34,7 @@ def migrate_from_legacy(ydoc: Mapping):
             ydoc['device']['extra_enumerators']['bluestacks_hyperv'] = True
     with contextlib.suppress(KeyError, AttributeError):
         if ydoc['behavior'].get('refill_ap_with_item', False) or ydoc['behavior'].get('refill_ap_with_originium', False):
-            logger.warning('不再支持通过设置 behavior.refill_ap_with_item 和 behavior.refill_ap_with_originium 来控制自动回复体力，请在每次作战时通过 GUI 或命令行设置。')
+            logger.warning('Controlling automatic sanity restoration with behavior.refill_ap_with_item and behavior.refill_ap_with_originium is no longer supported, please enable it via the GUI or CLI before operation.')
     with contextlib.suppress(KeyError, AttributeError):
         old_mistaken_delegation = ydoc['behavior']['mistaken_delegation']
         if isinstance(old_mistaken_delegation, Mapping):
@@ -71,7 +71,7 @@ def migrate_from_1(ydoc: Mapping):
     logger.info('Migrating from config schema version 1')
     with contextlib.suppress(KeyError, AttributeError):
         if ydoc['ocr']['backend'] == 'windows_media_ocr':
-            logger.warn('Windows OCR 因识别率问题已移除，设置更改为自动选择（当前仅支持 Tesseract）。')
+            logger.warn('Windows OCR is disabled due to accuracy issues, settings changed to auto-select (only Tesseract is currently supported).')
             ydoc['ocr']['backend'] = 'auto'
     ydoc['__version__'] = 2
     return ydoc

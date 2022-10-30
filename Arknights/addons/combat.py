@@ -25,7 +25,7 @@ class combat_session:
     prepare_reco: dict = None
 
 def item_name_guard(item):
-    return str(item) if item is not None else '<无法识别的物品>'
+    return str(item) if item is not None else '<UNIDENTIFIED>'
 
 def item_qty_guard(qty):
     return str(qty) if qty is not None else '?'
@@ -92,11 +92,11 @@ class CombatAddon(AddonBase):
         result = None
         with guard(self.logger):
             result = '[%s] %s' % (recoresult.operation,
-                '; '.join('%s: %s' % (grpname, ', '.join('%sx%s' % (item_name_guard(item.name), item_qty_guard(item.quantity))
+                '; '.join('%s: %s' % (grpname, ', '.join('%s x%s' % (item_name_guard(item.name), item_qty_guard(item.quantity))
                 for item in grpcont))
                 for grpname, grpcont in recoresult.items))
         if result is None:
-            result = '<发生错误>'
+            result = '<ERROR>'
         return result
 
     def combat_on_current_stage(self,
@@ -122,7 +122,7 @@ class CombatAddon(AddonBase):
                 # self.logger.info("开始第 %d 次战斗", count + 1)
                 self.operation_once_statemachine(c_id, )
                 count += 1
-                self.logger.info("第 %d 次作战完成", count)
+                self.logger.info("Operations completed: %d", count)
                 self.frontend.notify('completed-count', count)
                 if count != desired_count:
                     # 2019.10.06 更新逻辑后，提前点击后等待时间包括企鹅物流
@@ -132,10 +132,10 @@ class CombatAddon(AddonBase):
                         self.delay(BIG_WAIT, randomize=True, allow_skip=True)
         except StopIteration:
             # count: succeeded count
-            self.logger.error('未能进行第 %d 次作战', count + 1)
+            self.logger.error('Cannot start next operation')
             remain = desired_count - count
             if remain > 1:
-                self.logger.error('已忽略余下的 %d 次战斗', remain - 1)
+                self.logger.error('Ignoring %d remaining operations', remain - 1)
 
         return c_id, remain
 
@@ -168,7 +168,7 @@ class CombatAddon(AddonBase):
                     count_times += 1
                     self.delay(1, False)
                     if count_times <= 7:
-                        self.logger.warning('不在关卡界面')
+                        self.logger.warning('Not in level screen')
                         self.delay(TINY_WAIT, False)
                         continue
                     else:
@@ -176,22 +176,22 @@ class CombatAddon(AddonBase):
                         raise StopIteration()
 
             current_ap = int(recoresult['AP'].split('/')[0])
-            ap_text = '理智' if recoresult['consume_ap'] else '门票'
-            self.logger.info('当前%s %d, 关卡消耗 %d', ap_text, current_ap, recoresult['consume'])
+            ap_text = 'sanity' if recoresult['consume_ap'] else 'tickets'
+            self.logger.info('Current %s %d, %s cost %d', ap_text, current_ap, ap_text, recoresult['consume'])
             if current_ap < int(recoresult['consume']):
-                self.logger.error(ap_text + '不足 无法继续')
+                self.logger.error(ap_text + 'not enough to continue')
                 if recoresult['consume_ap'] and self.can_perform_refill():
-                    self.logger.info('尝试回复理智')
+                    self.logger.info('Attempting to restore sanity')
                     self.tap_rect(recoresult['start_button'])
                     self.delay(SMALL_WAIT)
                     screenshot = self.screenshot()
                     refill_type = imgreco.before_operation.check_ap_refill_type(screenshot)
                     confirm_refill = False
                     if refill_type == 'item' and self.refill_with_item:
-                        self.logger.info('使用道具回复理智')
+                        self.logger.info('Restoring sanity with potions')
                         confirm_refill = True
                     if refill_type == 'originium' and self.refill_with_originium:
-                        self.logger.info('碎石回复理智')
+                        self.logger.info('Restoring sanity with Originite Prime')
                         confirm_refill = True
                     # FIXME: 道具回复量不足时也会尝试使用
                     if confirm_refill:
@@ -199,16 +199,16 @@ class CombatAddon(AddonBase):
                         self.refill_count += 1
                         self.delay(MEDIUM_WAIT)
                         return  # to on_prepare state
-                    self.logger.error('未能回复理智')
+                    self.logger.error('Failed to restore sanity')
                     self.tap_rect(imgreco.before_operation.get_ap_refill_cancel_rect(self.viewport))
                 raise StopIteration()
 
             if not recoresult['delegated']:
-                self.logger.info('设置代理指挥')
+                self.logger.info('Enabling Auto Deploy')
                 self.tap_rect(recoresult['delegate_button'])
                 return  # to on_prepare state
 
-            self.logger.info("理智充足 开始行动")
+            self.logger.info("Enough to start operation")
             self.tap_rect(recoresult['start_button'])
             smobj.prepare_reco = recoresult
             smobj.state = on_troop
@@ -220,12 +220,12 @@ class CombatAddon(AddonBase):
                 screenshot = self.screenshot()
                 recoresult = imgreco.before_operation.check_confirm_troop_rect(screenshot)
                 if recoresult:
-                    self.logger.info('确认编队')
+                    self.logger.info('Starting mission')
                     break
                 else:
                     count_times += 1
                     if count_times <= 7:
-                        self.logger.warning('等待确认编队')
+                        self.logger.warning('Waiting to start mission')
                         continue
                     else:
                         self.logger.error('{} 次检测后不再确认编队界面'.format(count_times))
@@ -242,7 +242,7 @@ class CombatAddon(AddonBase):
                     wait_time = BATTLE_NONE_DETECT_TIME
                 else:
                     wait_time = sum(self.operation_time) / len(self.operation_time) - 7 + random.uniform(-8, 8)
-                self.logger.info('等待 %d s' % wait_time)
+                self.logger.info('Waiting %d s' % wait_time)
                 smobj.first_wait = False
             else:
                 wait_time = BATTLE_FINISH_DETECT
@@ -255,7 +255,7 @@ class CombatAddon(AddonBase):
             else:
                 self.delay(wait_time, randomize=False, allow_skip=True)
                 t = time.monotonic() - smobj.operation_start
-                self.logger.info('已进行 %.1f s，判断是否结束', t)
+                self.logger.info('%.1fs has passed, checking if the operation is done', t)
 
             screenshot = self.screenshot()
 
@@ -264,7 +264,7 @@ class CombatAddon(AddonBase):
                     self.logger.info('伦了。')
                     smobj.mistaken_delegation = True
                 else:
-                    self.logger.info('战斗未结束')
+                    self.logger.info('Operation has not finished')
                     return
 
             if self.match_roi('combat/topbar_camp', method='ccoeff', screenshot=screenshot):
@@ -272,7 +272,7 @@ class CombatAddon(AddonBase):
                     self.logger.info('伦了。')
                     smobj.mistaken_delegation = True
                 else:
-                    self.logger.info('战斗未结束')
+                    self.logger.info('Operation has not finished')
                     return
 
             if smobj.mistaken_delegation and not app.config.combat.mistaken_delegation.settle:
@@ -307,7 +307,7 @@ class CombatAddon(AddonBase):
                     screenshot = self.screenshot()
                     end_flag = imgreco.end_operation.check_end_operation_legacy(screenshot)
             if end_flag:
-                self.logger.info('战斗结束')
+                self.logger.info('Operation finished')
                 self.operation_time.append(t)
                 if self.wait_for_still_image(timeout=15, raise_for_timeout=True, check_delay=0.5, iteration=3):
                     smobj.state = on_end_operation
@@ -343,7 +343,7 @@ class CombatAddon(AddonBase):
                     self.logger.error('未处理的对话框：[%s] %s', dlgtype, ocrresult)
                     raise RuntimeError('unhandled dialog')
 
-            self.logger.info('战斗未结束')
+            self.logger.info('Operation has not finished')
 
         def on_level_up_popup(smobj):
             import imgreco.end_operation
@@ -361,7 +361,7 @@ class CombatAddon(AddonBase):
                 # 掉落识别
                 drops = imgreco.end_operation.recognize(smobj.prepare_reco['style'], screenshot, True)
                 self.logger.debug('%s', repr(drops))
-                self.logger.info('掉落识别结果：%s', self.format_recoresult(drops))
+                self.logger.info('Drops identified: %s', self.format_recoresult(drops))
                 log_total = len(self.loots)
                 for _, group in drops.items:
                     for record in group:
@@ -378,11 +378,11 @@ class CombatAddon(AddonBase):
             except Exception as e:
                 self.logger.error('', exc_info=True)
             if self.use_penguin_report and reportresult is penguin_stats.reporter.ReportResult.NotReported:
-                filename = app.screenshot_path / ('未上报掉落-%d.png' % time.time())
+                filename = app.screenshot_path / ('UNREPORTED-%d.png' % time.time())
                 with open(filename, 'wb') as f:
                     screenshot.save(f, format='PNG')
-                self.logger.error('未上报掉落截图已保存到 %s', filename)
-            self.logger.info('离开结算画面')
+                self.logger.error('Unreported screenshot was saved to %s', filename)
+            self.logger.info('Leaving battle results screen')
             self.tap_rect(imgreco.end_operation.get_dismiss_end_operation_rect(self.viewport))
             smobj.stop = True
 
@@ -400,15 +400,15 @@ class CombatAddon(AddonBase):
             raise StopIteration()
 
     def log_total_loots(self):
-        self.logger.info('目前已获得：%s', ', '.join('%sx%d' % tup for tup in self.loots.items()))
+        self.logger.info('Total obtained: %s', ', '.join('%sx%d' % tup for tup in self.loots.items()))
 
     @cli_command('quick')
     def cli_quick(self, argv):
         """
         quick [+-rR[N]] [n]
-        重复挑战当前画面关卡特定次数或直到理智不足
-        +r/-r 是否自动回复理智，最多回复 N 次
-        +R/-R 是否使用源石回复理智（需要同时开启 +r）
+        Enter the current operation n times or until sanity runs out
+        +r/-r Automatically restore sanity (up to N times)
+        +R/-R Restore sanity with Originite Prime (requires +r)
         """
 
         ops = _parse_opt(argv)

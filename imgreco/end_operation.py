@@ -44,9 +44,7 @@ def tell_stars(starsimg):
     return tuple(stars)
 
 
-recozh = minireco.MiniRecognizer(resources.load_pickle('minireco/NotoSansCJKsc-Medium.dat'))
-reco_novecento_bold = minireco.MiniRecognizer(resources.load_pickle('minireco/Novecentosanswide_Bold.dat'))
-reco_novecento_medium = minireco.MiniRecognizer(resources.load_pickle('minireco/Novecentosanswide_Medium.dat'))
+recozh = minireco.MiniRecognizer(resources.load_pickle('minireco/NuberNext-DemiBoldCondensed.dat'))
 
 
 def tell_group(groupimg, session, bartop, barbottom, ):
@@ -61,8 +59,8 @@ def tell_group(groupimg, session, bartop, barbottom, ):
     if diff > 0.8:
         session.low_confidence = True
 
-    if groupname == '幸运掉落':
-        return (groupname, [item.RecognizedItem(item_id='furni', name='(家具)', quantity=1, item_type='FURN')])
+    if groupname == 'Lucky Drops':
+        return (groupname, [item.RecognizedItem(item_id='furni', name='(Furniture)', quantity=1, item_type='FURN')])
 
     vw, vh = session.vw, session.vh
     itemwidth = 20.370 * vh
@@ -92,8 +90,8 @@ def tell_group_ep10(groupimg, session, bartop, barbottom, ):
     if diff > 0.6:
         session.low_confidence = True
 
-    if groupname == '幸运掉落':
-        return (groupname, [item.RecognizedItem(item_id='furni', name='(家具)', quantity=1, item_type='FURN')])
+    if groupname == 'Lucky Drops':
+        return (groupname, [item.RecognizedItem(item_id='furni', name='(Furniture)', quantity=1, item_type='FURN')])
 
     vw, vh = session.vw, session.vh
     itemwidth = 19.167 * vh
@@ -116,13 +114,13 @@ def tell_group_ep10(groupimg, session, bartop, barbottom, ):
 
 
 def tell_group_name_alt(img, session):
-    names = [('龙门币', '声望&龙门币奖励'),
-             ('常规', '常规掉落'),
-             ('特殊', '特殊掉落'),
-             ('幸运', '幸运掉落'),
-             ('额外', '额外物资'),
-             ('首次', '首次掉落'),
-             ('返还', '理智返还')]
+    names = [('LMD', 'EXP & LMD'),
+             ('Regular', 'Regular Drops'),
+             ('Special', 'Special Drops'),
+             ('Lucky', 'Lucky Drops'),
+             ('Extra', 'Extra Drops'),
+             ('First Clear', 'First Clear'),
+             ('Refund', 'Sanity refunded')]
     comparsions = []
     scale = session.vh * 100 / 1080
 
@@ -151,12 +149,12 @@ def tell_group_name_alt(img, session):
 
 def tell_group_name_ocr(img, session):
     
-    names = ['声望&龙门币奖励', '常规掉落', '特殊掉落', '幸运掉落', '额外物资', '首次掉落', '理智返还']
+    names = ['EXP & LMD', 'Regular Drops', 'Special Drops', 'Lucky Drops', 'Extra Drops', 'First Clear', 'Sanity refunded']
     all_chars = ''.join(set(c for item in names for c in item))
     comparsions = []
     scale = session.vh * 100 / 1080
     from .ocr import acquire_engine_global_cached
-    engine = acquire_engine_global_cached('zh-cn')
+    engine = acquire_engine_global_cached('en-us')
     img = imgops.crop_blackedge(img, 1)
     invimg = Image.fromarray(cv2.copyMakeBorder(255 - img.array, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=255), img.mode)
     ocr_result = engine.recognize(invimg, char_whitelist=all_chars)
@@ -202,7 +200,7 @@ def check_level_up_popup(img):
     lvl_up_img = img.crop((50*vw-48.796*vh, 47.685*vh, 50*vw-23.148*vh, 56.019*vh)).convert('L')  # 等级提升
     lvl_up_img = imgops.enhance_contrast(lvl_up_img, 216, 255)
     lvl_up_text = recozh.recognize(lvl_up_img)
-    return minireco.check_charseq(lvl_up_text, '提升')
+    return minireco.check_charseq(lvl_up_text, 'Level up')
 
 
 def check_end_operation(style, friendship, img):

@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 from resources.recruit_database import recruit_database
 known_tags = set(y for x in recruit_database for y in x[2])
-known_tags.update(('资深干员', '高级资深干员'))
+known_tags.update(('Senior Operator', 'Top Operator'))
 known_tagchars = ''.join(set(c for t in known_tags for c in t))
 
 def remove_unknown_chars(s, known_chars):
@@ -33,7 +33,7 @@ def get_recruit_tags(img):
 
     tagimgs = [Image.fromarray(cv2.threshold(img.array, 127, 255, cv2.THRESH_BINARY_INV)[1]) for img in tagimgs]
 
-    eng = ocr.acquire_engine_global_cached('zh-cn')
+    eng = ocr.acquire_engine_global_cached('en-us')
     recognize = lambda img: eng.recognize(img, int(vh * 20), hints=[ocr.OcrHint.SINGLE_LINE], char_whitelist=known_tagchars).text.replace(' ', '')
     cookedtags = []
     for img in tagimgs:
