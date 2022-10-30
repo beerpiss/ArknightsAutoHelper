@@ -13,12 +13,13 @@ from weakref import WeakValueDictionary
 class ReverseConnectionFuture(Future[socket.socket]):
     cookie: bytes
 
+
 class ReverseConnectionHost(threading.Thread):
     _instance: ClassVar[Optional[ReverseConnectionHost]] = None
 
     @classmethod
     def get_instance(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls._instance = cls()
             cls._instance.start()
         return cls._instance
@@ -27,11 +28,11 @@ class ReverseConnectionHost(threading.Thread):
         super().__init__()
         self.daemon = True
         self.listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.listen_sock.bind(('127.0.0.1', port))
+        self.listen_sock.bind(("127.0.0.1", port))
         self.port = self.listen_sock.getsockname()[1]
         self.registered = WeakValueDictionary[str, ReverseConnectionFuture]()
         self.registered_lock = threading.RLock()
-    
+
     def __del__(self):
         self.stop()
 
@@ -40,7 +41,7 @@ class ReverseConnectionHost(threading.Thread):
         with self.registered_lock:
             if cookie is None:
                 while True:
-                    cookie = b'%08X' % secrets.randbits(32)
+                    cookie = b"%08X" % secrets.randbits(32)
                     if cookie not in self.registered:
                         break
             else:
@@ -51,18 +52,18 @@ class ReverseConnectionHost(threading.Thread):
                 self.registered[cookie] = future
         return future
 
-
     def _fulfilled(self, cookie, sock):
         with self.registered_lock:
             future = self.registered.pop(cookie, None)
         if future is not None:
             future.set_result(sock)
 
-
     def run(self):
         self.listen_sock.listen()
         self.sel = selectors.DefaultSelector()
-        self.sel.register(self.listen_sock, selectors.EVENT_READ, (self._accept_conn, None))
+        self.sel.register(
+            self.listen_sock, selectors.EVENT_READ, (self._accept_conn, None)
+        )
 
         while True:
             # print('selecting ', list(self.sel.get_map().keys()))
@@ -81,8 +82,8 @@ class ReverseConnectionHost(threading.Thread):
 
     def _accept_conn(self, sock, event, _):
         conn, peer = sock.accept()
-        self.sel.register(conn, selectors.EVENT_READ, (self._conn_data, [b'']))
-    
+        self.sel.register(conn, selectors.EVENT_READ, (self._conn_data, [b""]))
+
     def _conn_data(self, sock, event, box):
         data = sock.recv(8 - len(box[0]))
         if data:
@@ -98,18 +99,20 @@ class ReverseConnectionHost(threading.Thread):
             self.sel.unregister(sock)
             sock.close()
 
+
 @atexit.register
 def _cleanup():
     instance = ReverseConnectionHost._instance
     if instance is not None:
         instance.stop()
 
+
 def main():
     worker = ReverseConnectionHost(11451)
     worker.start()
     try:
         while True:
-            f = worker.register_cookie(b'0000000\n')
+            f = worker.register_cookie(b"0000000\n")
             sock = f.result()
             while True:
                 buf = sock.recv(4096)
@@ -119,6 +122,7 @@ def main():
             sock.close()
     finally:
         worker.stop()
-    
+
+
 if __name__ == "__main__":
     main()

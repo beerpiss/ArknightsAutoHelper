@@ -8,12 +8,13 @@ if TYPE_CHECKING:
     from typing import TypeVar, Union, Type, ForwardRef, Optional
     from .addon import AddonBase
     from automator.control.types import Controller
-    TAddon = TypeVar('TAddon')
+
+    TAddon = TypeVar("TAddon")
 del TYPE_CHECKING
 
 import logging
 
-logger = logging.getLogger('helper')
+logger = logging.getLogger("helper")
 
 
 from .control.adb.client import get_config_adb_server
@@ -21,8 +22,10 @@ from .control.ADBController import ADBController
 from .frontend import Frontend, DummyFrontend
 from .mixin import AddonMixin
 
+
 class BaseAutomator(AddonMixin):
     frontend: Frontend
+
     def __init__(self, device_connector=None, frontend=None):  # 当前绑定到的设备
         self.logger = logging.getLogger(type(self).__name__)
         self.frontend = frontend
@@ -41,9 +44,9 @@ class BaseAutomator(AddonMixin):
 
         logger.debug("Successfully initialized the module")
 
-
     def addon(self, cls: Union[ForwardRef[Type[TAddon]], Type[TAddon]]) -> TAddon:
         from .addon import _addon_registry
+
         dealias = _addon_registry[cls]
         if dealias in self.addons:
             return self.addons[dealias]
@@ -72,13 +75,18 @@ class BaseAutomator(AddonMixin):
         self._ensure_device()
         return self._viewport
 
-    def connect_device(self, connector=None, *, adb_serial=None) -> Optional[Controller]:
+    def connect_device(
+        self, connector=None, *, adb_serial=None
+    ) -> Optional[Controller]:
         old_controller = self._controller
         if connector is not None:
             self._controller = connector
         elif adb_serial is not None:
             from automator.control.adb.targets import get_target_from_adb_serial
-            self._controller = get_target_from_adb_serial(adb_serial).create_controller()
+
+            self._controller = get_target_from_adb_serial(
+                adb_serial
+            ).create_controller()
         else:
             self._controller = None
             return old_controller
@@ -86,9 +94,9 @@ class BaseAutomator(AddonMixin):
         self.vw = self._viewport[0] / 100
         self.vh = self._viewport[1] / 100
         self.on_device_connected()
-        self.frontend.notify('current-device', str(self._controller))
+        self.frontend.notify("current-device", str(self._controller))
         return old_controller
-    
+
     def on_device_connected(self):
         pass
 

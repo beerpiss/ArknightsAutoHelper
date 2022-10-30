@@ -46,10 +46,10 @@ class TermOp:
 
     def move_to_scroll_area(self):
         w, h = get_terminal_size()
-        self.move_cursor(1, h-self.scroll+1)
+        self.move_cursor(1, h - self.scroll + 1)
 
     def clear_scroll_area(self):
         with self.keep_cursor():
             self.move_to_scroll_area()
-            ctl = b'\033[B'.join([b'\033[0m\033[2K'] * self.scroll)
+            ctl = b"\033[B".join([b"\033[0m\033[2K"] * self.scroll)
             self.fd.write(ctl)

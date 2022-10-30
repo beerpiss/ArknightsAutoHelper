@@ -1,4 +1,3 @@
-
 from Arknights.helper import ArknightsHelper
 import cv2
 from util import cvimage as Image
@@ -19,5 +18,5 @@ def crop_cv_by_rect(cv_img, rect):
 
 
 def show_img(img):
-    cv2.imshow('test', img)
+    cv2.imshow("test", img)
     cv2.waitKey()

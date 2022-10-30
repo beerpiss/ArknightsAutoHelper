@@ -4,16 +4,29 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Annotated, Callable, ClassVar, Sequence, Tuple, TypeVar, Union, Type, ForwardRef, Optional
+    from typing import (
+        Annotated,
+        Callable,
+        ClassVar,
+        Sequence,
+        Tuple,
+        TypeVar,
+        Union,
+        Type,
+        ForwardRef,
+        Optional,
+    )
     from .helper import BaseAutomator
-    TAddon = TypeVar('TAddon')
+
+    TAddon = TypeVar("TAddon")
 del TYPE_CHECKING
 
 import logging
 from util import richlog
 from .mixin import AddonMixin
 
-logger = logging.getLogger('addon')
+logger = logging.getLogger("addon")
+
 
 @dataclass
 class _cli_command_record:
@@ -21,14 +34,17 @@ class _cli_command_record:
     attr: str
     help: Optional[str] = None
     help_func: Optional[Callable] = None
+
     def get_help(self, helper: BaseAutomator):
         if self.help_func is None:
             return self.help
         else:
             return self.help_func(helper.addon(self.owner))
 
+
 _addon_registry: OrderedDict[str, Type[AddonBase]] = OrderedDict()
 _cli_registry: OrderedDict[str, _cli_command_record] = OrderedDict()
+
 
 class RichLogSyncHandler(logging.Handler):
     def __init__(self, richlog: richlog.RichLogger):
@@ -36,10 +52,15 @@ class RichLogSyncHandler(logging.Handler):
         self.richlog = richlog
 
     def emit(self, record: logging.LogRecord):
-        self.richlog.logtext(f'[{record.levelname}] {record.getMessage()}')
+        self.richlog.logtext(f"[{record.levelname}] {record.getMessage()}")
+
 
 class cli_command:
-    def __init__(self, command: Union[Callable[[Sequence[str]], int], str] = None, help: Optional[str] = None):
+    def __init__(
+        self,
+        command: Union[Callable[[Sequence[str]], int], str] = None,
+        help: Optional[str] = None,
+    ):
         if callable(command):
             self.command = None
             self.fn = command
@@ -53,8 +74,12 @@ class cli_command:
             self.command = name
         if self.help is None:
             self.help = self.fn.__doc__
-        _cli_registry[self.command] = _cli_command_record(owner, name, self.help, self.help_func)
-        logger.debug('registering cli command: %s from %s', self.command, owner.__qualname__)
+        _cli_registry[self.command] = _cli_command_record(
+            owner, name, self.help, self.help_func
+        )
+        logger.debug(
+            "registering cli command: %s from %s", self.command, owner.__qualname__
+        )
         setattr(owner, name, self.fn)
 
     def dynamic_help(self, func):
@@ -65,12 +90,13 @@ class cli_command:
         self.fn = fn
         return self
 
+
 class AddonBase(AddonMixin):
-    alias : ClassVar[Union[str, None]] = None
+    alias: ClassVar[Union[str, None]] = None
 
     def __init__(self, helper):
         super().__init__()
-        self.helper : BaseAutomator = helper
+        self.helper: BaseAutomator = helper
         self.logger = logging.getLogger(type(self).__name__)
         self.richlogger = richlog.get_logger(type(self).__name__)
         self._sync_handler = None

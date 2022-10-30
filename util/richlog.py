@@ -10,6 +10,7 @@ import atexit
 import cv2
 from util import cvimage
 
+
 class _richlog_worker(threading.Thread):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,7 +23,7 @@ class _richlog_worker(threading.Thread):
         if filename not in self.files:
             with self.lock:
                 if filename not in self.files:
-                    f = open(filename, 'wb' if overwrite else 'ab')
+                    f = open(filename, "wb" if overwrite else "ab")
                     if f.tell() == 0:
                         f.write(b'<html><head><meta charset="utf-8"></head><body>')
                     self.files[filename] = f
@@ -35,24 +36,26 @@ class _richlog_worker(threading.Thread):
                 file, overwrite, msgtype, msg = record
                 self.open(file, overwrite)
                 io: BinaryIO = self.files[file]
-                if msgtype == 'html':
+                if msgtype == "html":
                     if isinstance(msg, str):
-                        msg = msg.encode('utf-8')
+                        msg = msg.encode("utf-8")
                     io.write(msg)
-                elif msgtype == 'text':
-                    io.write(b'<pre>%s</pre>\n' % escape(msg).encode('utf-8'))
-                elif msgtype == 'image':
+                elif msgtype == "text":
+                    io.write(b"<pre>%s</pre>\n" % escape(msg).encode("utf-8"))
+                elif msgtype == "image":
                     from PIL import Image as PILImage
+
                     im: PILImage.Image = msg
                     io.write(b'<p><img src="data:image/webp;base64,')
                     bio = BytesIO()
-                    im.save(bio, 'webp', lossless=True, quality=0, method=0)
+                    im.save(bio, "webp", lossless=True, quality=0, method=0)
                     io.write(b64encode(bio.getbuffer()))
                     io.write(b'"></p>\n')
                 io.flush()
                 self.queue.task_done()
             except Exception as e:
                 import traceback
+
                 traceback.print_exc()
                 pass
         self.queue.task_done()
@@ -64,19 +67,24 @@ class _richlog_worker(threading.Thread):
             f.close()
 
     def loghtml(self, file, overwrite, html):
-        self.queue.put((file, overwrite, 'html', html))
+        self.queue.put((file, overwrite, "html", html))
 
     def logtext(self, file, overwrite, text):
-        self.queue.put((file, overwrite, 'text', text))
+        self.queue.put((file, overwrite, "text", text))
 
     def logimage(self, file, overwrite, im: cvimage.Image):
         if im is None:
             return
-        pil_im = im.to_pil(always_copy=True)  # PIL Image.save is much more usable than OpenCV imwrite/imencode
-        self.queue.put((file, overwrite, 'image', pil_im))
-        
+        pil_im = im.to_pil(
+            always_copy=True
+        )  # PIL Image.save is much more usable than OpenCV imwrite/imencode
+        self.queue.put((file, overwrite, "image", pil_im))
+
+
 _worker = _richlog_worker()
 _lock = threading.Lock()
+
+
 def _ensure_worker():
     if _worker.is_alive():
         return
@@ -98,7 +106,7 @@ class RichLogger:
     def logfig(self, fig):
         # matplotlib figure
         buf = BytesIO()
-        fig.savefig(buf, format='svg')
+        fig.savefig(buf, format="svg")
         _ensure_worker()
         _worker.loghtml(self.filename, self.overwrite, buf.getvalue())
 
@@ -114,9 +122,10 @@ class RichLogger:
 @lru_cache(maxsize=None)
 def get_logger(module):
     import app
+
     if app.get_instance_id() == 0:
-        filename = '%s.html' % module
+        filename = "%s.html" % module
     else:
-        filename = '%s.%d.html' % (module, app.get_instance_id())
+        filename = "%s.%d.html" % (module, app.get_instance_id())
     logger = RichLogger(app.logs.joinpath(filename), True)
     return logger

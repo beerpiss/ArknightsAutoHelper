@@ -2,17 +2,18 @@ from __future__ import annotations
 from typing import Literal, TypedDict
 
 
-
 class ServerExistence(TypedDict):
     exist: bool
     openTime: int
     closeTime: int
+
 
 class Existence(TypedDict):
     CN: ServerExistence
     JP: ServerExistence
     KR: ServerExistence
     US: ServerExistence
+
 
 class Item(TypedDict):
     alias: list[str]
@@ -33,10 +34,12 @@ class Bounds(TypedDict):
     upper: int
     exceptions: list[int]
 
+
 class DropInfo(TypedDict):
     bounds: Bounds
     dropType: str
     itemId: str
+
 
 class Stage(TypedDict):
     apCost: int
@@ -47,13 +50,17 @@ class Stage(TypedDict):
     minClearTime: int
     recognitionOnly: list[str]
     stageId: str
-    stageType: Literal['MAIN', 'SUB', 'ACTIVITY', 'DAILY']
+    stageType: Literal["MAIN", "SUB", "ACTIVITY", "DAILY"]
     zoneId: str
 
+
 class ArkDrop(TypedDict):
-    dropType: Literal['REGULAR_DROP', 'NORMAL_DROP', 'SPECIAL_DROP', 'EXTRA_DROP', 'FURNITURE']
+    dropType: Literal[
+        "REGULAR_DROP", "NORMAL_DROP", "SPECIAL_DROP", "EXTRA_DROP", "FURNITURE"
+    ]
     itemId: str
     quantity: int
+
 
 class SingleReportRequest(TypedDict):
     drops: list[ArkDrop]

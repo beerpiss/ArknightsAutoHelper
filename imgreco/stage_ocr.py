@@ -7,27 +7,64 @@ from util.richlog import get_logger
 from . import common
 from . import resources
 
-idx2id = ['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-          'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+idx2id = [
+    "-",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+]
 logger = get_logger(__name__)
 
 
 @lru_cache(maxsize=2)
-def _load_onnx_model(model_name='chars'):
-    with resources.open_file(f'stage_ocr/{model_name}.onnx') as f:
+def _load_onnx_model(model_name="chars"):
+    with resources.open_file(f"stage_ocr/{model_name}.onnx") as f:
         data = f.read()
         net = cv2.dnn.readNetFromONNX(data)
         return net
 
 
-def predict_cv(img, noise_size=None, model_name='chars'):
+def predict_cv(img, noise_size=None, model_name="chars"):
     char_imgs = crop_char_img(img, noise_size)
     if not char_imgs:
-        return ''
+        return ""
     return predict_char_images(char_imgs, model_name)
 
 
-def predict_char_images(char_imgs, model_name='chars'):
+def predict_char_images(char_imgs, model_name="chars"):
     net = _load_onnx_model(model_name)
     roi_list = [np.expand_dims(resize_char(x), 2) for x in char_imgs]
     blob = cv2.dnn.blobFromImages(roi_list)
@@ -37,7 +74,7 @@ def predict_char_images(char_imgs, model_name='chars'):
     # softmax = [common.softmax(score) for score in scores]
     # probs = [softmax[i][predicts[i]] for i in range(len(predicts))]
     # print(probs)
-    return ''.join([idx2id[p] for p in predicts])
+    return "".join([idx2id[p] for p in predicts])
 
 
 def resize_char(img):
@@ -67,7 +104,7 @@ def crop_char_img(img, noise_size=None):
             if img[y][x] > 127:
                 flag = True
                 for i in range(noise_size):
-                    if img[y+i][x] < 127:
+                    if img[y + i][x] < 127:
                         flag = False
             if flag:
                 has_white = True
@@ -111,7 +148,9 @@ def pil_to_cv_gray_img(pil_img):
 def cut_tag(screen, w, pt):
     img_h, img_w = screen.shape[:2]
     tag_w, tag_h = 130, 36
-    tag = thresholding(screen[pt[1] + 2:pt[1] + tag_h + 3, pt[0] + w + 3:pt[0] + tag_w + w])
+    tag = thresholding(
+        screen[pt[1] + 2 : pt[1] + tag_h + 3, pt[0] + w + 3 : pt[0] + tag_w + w]
+    )
     # 130 像素不一定能将 tag 截全，所以再检查一次看是否需要拓宽 tag 长度
     for i in range(3):
         for j in range(tag_h):
@@ -119,7 +158,9 @@ def cut_tag(screen, w, pt):
                 tag_w = 150
                 if pt[0] + w + tag_w >= img_w:
                     return None
-                tag = thresholding(screen[pt[1] - 1:pt[1] + tag_h, pt[0] + w + 3:pt[0] + tag_w + w])
+                tag = thresholding(
+                    screen[pt[1] - 1 : pt[1] + tag_h, pt[0] + w + 3 : pt[0] + tag_w + w]
+                )
                 break
     return tag
 
@@ -128,7 +169,9 @@ def remove_holes(img):
     # 去除小连通域
     h, w = img.shape[:2]
     noise_size = 15 if h > 25 else 8
-    contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(
+        img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
     for i in range(len(contours)):
         # 计算区块面积
         area = cv2.contourArea(contours[i])
@@ -175,20 +218,20 @@ def recognize_stage_tags(pil_screen, template, ccoeff_threshold=0.75):
             pos = (int((pt[0] + (tag_w / 2)) / ratio), int((pt[1] + 20) / ratio))
             # logger.logtext('pos: %s' % str(pos))
             # res.append({'tag_img': tag, 'pos': (pt[0] + (tag_w / 2), pt[1] + 20), 'tag_str': tag_str})
-            res.append({'pos': pos, 'tag_str': tag_str})
+            res.append({"pos": pos, "tag_str": tag_str})
     if dbg_screen is not None:
         logger.logimage(common.convert_to_pil(dbg_screen))
     return res
 
 
-def do_tag_ocr(img, noise_size=None, model_name='chars'):
+def do_tag_ocr(img, noise_size=None, model_name="chars"):
     logger.logimage(common.convert_to_pil(img))
     res = do_tag_ocr_dnn(img, noise_size, model_name)
-    logger.logtext('res: %s' % res)
+    logger.logtext("res: %s" % res)
     return res
 
 
-def do_tag_ocr_dnn(img, noise_size=None, model_name='chars'):
+def do_tag_ocr_dnn(img, noise_size=None, model_name="chars"):
     return predict_cv(img, noise_size, model_name)
 
 
@@ -203,9 +246,11 @@ def do_img_ocr(pil_img, noise_size=None):
     return do_tag_ocr(img, noise_size)
 
 
-stage_icon1 = pil_to_cv_gray_img(resources.load_image('stage_ocr/stage_icon1.png'))
-stage_icon2 = pil_to_cv_gray_img(resources.load_image('stage_ocr/stage_icon2.png'))
-stage_icon_ex1 = pil_to_cv_gray_img(resources.load_image('stage_ocr/stage_icon_ex1.png'))
+stage_icon1 = pil_to_cv_gray_img(resources.load_image("stage_ocr/stage_icon1.png"))
+stage_icon2 = pil_to_cv_gray_img(resources.load_image("stage_ocr/stage_icon2.png"))
+stage_icon_ex1 = pil_to_cv_gray_img(
+    resources.load_image("stage_ocr/stage_icon_ex1.png")
+)
 normal_icons = [stage_icon1, stage_icon2]
 extra_icons = [stage_icon_ex1]
 
@@ -215,8 +260,8 @@ def recognize_all_screen_stage_tags(pil_screen, allow_extra_icons=False):
     if allow_extra_icons:
         for icon in extra_icons:
             for tag in recognize_stage_tags(pil_screen, icon, 0.75):
-                tags_map[tag['tag_str']] = tag['pos']
+                tags_map[tag["tag_str"]] = tag["pos"]
     for icon in normal_icons:
         for tag in recognize_stage_tags(pil_screen, icon):
-            tags_map[tag['tag_str']] = tag['pos']
+            tags_map[tag["tag_str"]] = tag["pos"]
     return tags_map

@@ -1,15 +1,19 @@
 from automator import AddonBase
 from Arknights.flags import *
 
+
 class CommonAddon(AddonBase):
     alias = "common"
+
     def back_to_main(self, extra_predicate=None):  # 回到主页
         import imgreco.common
         import imgreco.main
+
         if extra_predicate is None:
             self.logger.info("Returning to home page")
             from Arknights.addons.record import RecordAddon
-            self.addon(RecordAddon).try_replay_record('back_to_main', quiet=True)
+
+            self.addon(RecordAddon).try_replay_record("back_to_main", quiet=True)
         else:
             self.logger.info("Going back to home page")
         retry_count = 0
@@ -18,7 +22,7 @@ class CommonAddon(AddonBase):
             screenshot = self.screenshot()
 
             if extra_predicate is not None and extra_predicate(screenshot):
-                self.logger.info('Stop conditions met, stopping navigation')
+                self.logger.info("Stop conditions met, stopping navigation")
                 return
 
             if imgreco.main.check_main(screenshot):
@@ -26,20 +30,27 @@ class CommonAddon(AddonBase):
 
             # 检查是否有返回按钮
             if imgreco.common.check_nav_button(screenshot):
-                self.logger.info('Finding the back button and tapping it')
-                self.tap_rect(imgreco.common.get_nav_button_back_rect(self.viewport), post_delay=2)
+                self.logger.info("Finding the back button and tapping it")
+                self.tap_rect(
+                    imgreco.common.get_nav_button_back_rect(self.viewport), post_delay=2
+                )
                 # 点击返回按钮之后重新检查
                 continue
 
             if imgreco.common.check_get_item_popup(screenshot):
-                self.logger.info('当前为获得物资画面，关闭')
-                self.tap_rect(imgreco.common.get_reward_popup_dismiss_rect(self.viewport), post_delay=2)
+                self.logger.info("当前为获得物资画面，关闭")
+                self.tap_rect(
+                    imgreco.common.get_reward_popup_dismiss_rect(self.viewport),
+                    post_delay=2,
+                )
                 continue
 
             # 检查是否在设置画面
             if imgreco.common.check_setting_scene(screenshot):
                 self.logger.info("当前为设置/邮件画面，返回")
-                self.tap_rect(imgreco.common.get_setting_back_rect(self.viewport), post_delay=2)
+                self.tap_rect(
+                    imgreco.common.get_setting_back_rect(self.viewport), post_delay=2
+                )
                 continue
 
             # 检测是否有关闭按钮
@@ -51,23 +62,31 @@ class CommonAddon(AddonBase):
 
             dlgtype, ocr = imgreco.common.recognize_dialog(screenshot)
             self.logger.debug(f"检查对话框：{dlgtype}, {ocr}")
-            if dlgtype == 'yesno':
-                if '基建' in ocr or '停止招募' in ocr or '好友列表' in ocr:
-                    self.tap_rect(imgreco.common.get_dialog_right_button_rect(screenshot), post_delay=5)
+            if dlgtype == "yesno":
+                if "基建" in ocr or "停止招募" in ocr or "好友列表" in ocr:
+                    self.tap_rect(
+                        imgreco.common.get_dialog_right_button_rect(screenshot),
+                        post_delay=5,
+                    )
                     continue
-                elif '招募干员' in ocr or '加急' in ocr or '退出游戏' in ocr:
-                    self.tap_rect(imgreco.common.get_dialog_left_button_rect(screenshot), post_delay=2)
+                elif "招募干员" in ocr or "加急" in ocr or "退出游戏" in ocr:
+                    self.tap_rect(
+                        imgreco.common.get_dialog_left_button_rect(screenshot),
+                        post_delay=2,
+                    )
                     continue
                 else:
-                    raise RuntimeError('未适配的对话框')
-            elif dlgtype == 'ok':
-                self.tap_rect(imgreco.common.get_dialog_ok_button_rect(screenshot), post_delay=2)
+                    raise RuntimeError("未适配的对话框")
+            elif dlgtype == "ok":
+                self.tap_rect(
+                    imgreco.common.get_dialog_ok_button_rect(screenshot), post_delay=2
+                )
                 self.delay(1)
                 continue
             retry_count += 1
             if retry_count > max_retry:
-                raise RuntimeError('未知画面')
-            self.logger.info('未知画面，尝试返回按钮 {}/{} 次'.format(retry_count, max_retry))
+                raise RuntimeError("未知画面")
+            self.logger.info("未知画面，尝试返回按钮 {}/{} 次".format(retry_count, max_retry))
             self.control.input.send_key(4)  # KEYCODE_BACK
             self.delay(3)
         self.logger.info("Returned to home page")

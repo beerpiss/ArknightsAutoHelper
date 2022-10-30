@@ -5,8 +5,10 @@ import enum
 from . import roapi
 from .types import *
 
+
 class CtypesEnum(enum.IntEnum):
     """A ctypes-compatible IntEnum superclass."""
+
     @classmethod
     def from_param(cls, obj):
         return int(obj)
@@ -18,35 +20,47 @@ def STDMETHOD(index, name, *argtypes):
     return func
 
 
-def define_winrt_com_method(interface, name, *argtypes, retval=None, propget=None, propput=None, vtbl: int = next):
+def define_winrt_com_method(
+    interface,
+    name,
+    *argtypes,
+    retval=None,
+    propget=None,
+    propput=None,
+    vtbl: int = next
+):
     if vtbl is next:
         vtbl = interface._vtblend + 1
-    if getattr(interface, '_method_defs', None) is None:
-        setattr(interface, '_method_defs', [])
-    if interface._method_defs is getattr(interface.__mro__[1], '_method_defs', None):
-        setattr(interface, '_method_defs', [])
+    if getattr(interface, "_method_defs", None) is None:
+        setattr(interface, "_method_defs", [])
+    if interface._method_defs is getattr(interface.__mro__[1], "_method_defs", None):
+        setattr(interface, "_method_defs", [])
     if retval is not None:
         comfunc = STDMETHOD(vtbl, name, *argtypes, POINTER(retval))
         if retval.__mro__[1] is _SimpleCData:  # if return type is primitive type
+
             def func(this, *args, **kwargs):
                 obj = this.astype(interface)
                 result = retval()
                 comfunc(obj, *args, byref(result), **kwargs)
                 return result.value
+
         else:
+
             def func(this, *args, **kwargs):
                 obj = this.astype(interface)
                 result = _new_rtobj(retval)
                 comfunc(obj, *args, byref(result), **kwargs)
                 return result
+
         interface._method_defs.append((vtbl, name, comfunc))
-        setattr(interface, '_' + name, comfunc)
+        setattr(interface, "_" + name, comfunc)
         setattr(interface, name, func)
     elif propget is not None:  # name = "get_Something"
         comgetter = STDMETHOD(vtbl, name, *argtypes, POINTER(propget))
         setattr(interface, name, comgetter)
         interface._method_defs.append((vtbl, name, comgetter))
-        if name.startswith('get_'):
+        if name.startswith("get_"):
             propname = name[4:]
             if propname in interface.__dict__:
                 setter = interface.__dict__[propname].fset
@@ -54,24 +68,28 @@ def define_winrt_com_method(interface, name, *argtypes, retval=None, propget=Non
                 setter = None
 
             if propget.__mro__[1] is _SimpleCData:  # if return type is primitive type
+
                 def getter(this, *args, **kwargs):
                     obj = this.astype(interface)
                     result = propget()
                     comgetter(obj, *args, byref(result), **kwargs)
                     return result.value
+
             else:
+
                 def getter(this, *args, **kwargs):
                     obj = this.astype(interface)
                     result = _new_rtobj(propget)
                     comgetter(obj, *args, byref(result), **kwargs)
                     return result
+
             setattr(interface, propname, property(getter, setter))
 
     elif propput is not None:  # name = 'put_Something'
         comsetter = STDMETHOD(vtbl, name, *argtypes, propput)
         interface._method_defs.append((vtbl, name, comsetter))
         setattr(interface, name, comsetter)
-        if name.startswith('put_'):
+        if name.startswith("put_"):
             propname = name[4:]
             if propname in interface.__dict__:
                 getter = interface.__dict__[propname].fget
@@ -127,54 +145,57 @@ def funcwrap(f):
 
 
 def _non_activatable_init(self):
-    raise NotImplementedError('non-activatable runtime class ' + self._runtimeclass_name)
+    raise NotImplementedError(
+        "non-activatable runtime class " + self._runtimeclass_name
+    )
 
 
 _predefined_sigs = {
-    c_uint8: 'u1',
-    c_int32: 'i4',
-    c_uint32: 'u4',
-    c_int64: 'i8',
-    c_uint64: 'u8',
-    c_float: 'f4',
-    c_double: 'f8',
-    c_bool: 'b1',
-    str: 'string',
-    'char16': 'c2',
-    GUID: 'g16',
+    c_uint8: "u1",
+    c_int32: "i4",
+    c_uint32: "u4",
+    c_int64: "i8",
+    c_uint64: "u8",
+    c_float: "f4",
+    c_double: "f8",
+    c_bool: "b1",
+    str: "string",
+    "char16": "c2",
+    GUID: "g16",
 }
 
 
 def _runtimeclass_signature(classname, default_iid):
-    return 'rc(%s;{%s})' % (classname, str(default_iid).lower())
+    return "rc(%s;{%s})" % (classname, str(default_iid).lower())
 
 
 def _get_type_signature(clazz):
-    if hasattr(clazz, '_signature'):
+    if hasattr(clazz, "_signature"):
         return clazz._signature
     elif isruntimeclass(clazz):
         return _runtimeclass_signature(clazz._runtimeclass_name, clazz.__mro__[2].GUID)
-    elif hasattr(clazz, 'GUID'):
-        return '{%s}' % str(clazz.GUID).lower()
+    elif hasattr(clazz, "GUID"):
+        return "{%s}" % str(clazz.GUID).lower()
     elif clazz in _predefined_sigs:
         return _predefined_sigs[clazz]
     else:
-        raise TypeError('no signature for type', clazz)
+        raise TypeError("no signature for type", clazz)
 
 
 _runtimeclass_registry = {}
 
+
 class runtimeclass:
     def __init_subclass__(cls):
-        mod1 = cls.__module__.split('.')
-        mod2 = __name__.split('.')
+        mod1 = cls.__module__.split(".")
+        mod2 = __name__.split(".")
         i = 0
         for i in range(min(len(mod1), len(mod2))):
             if mod1[i] != mod2[i]:
                 break
         name = mod1[i:]
         name.append(cls.__name__)
-        clsname = '.'.join(name)
+        clsname = ".".join(name)
         cls._runtimeclass_name = clsname
         _runtimeclass_registry[clsname] = cls
 
@@ -201,6 +222,7 @@ def generics_cache(func):
 
 def _sigoctets_to_uuid(octets):
     import hashlib
+
     digest = hashlib.sha1()
     digest.update(octets)
     uuidbytes = bytearray(digest.digest()[:16])
@@ -210,15 +232,23 @@ def _sigoctets_to_uuid(octets):
     octet8 = uuidbytes[8]
     octet8 = (octet8 & 0b00111111) | 0b10000000
     uuidbytes[8] = octet8
-    return '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x' % tuple(uuidbytes)
+    return (
+        "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x"
+        % tuple(uuidbytes)
+    )
 
 
 @lru_cache()
 def generate_parameterized_attrs(piid, *generics):
-    newsig = 'pinterface({%s};%s)' % (piid, ';'.join(map(_get_type_signature, generics)))
-    sigoctets = b'\x11\xF4z\xD5{sB\xC0\xAB\xAE\x87\x8B\x1E\x16\xAD\xEE' + newsig.encode('utf-8')
+    newsig = "pinterface({%s};%s)" % (
+        piid,
+        ";".join(map(_get_type_signature, generics)),
+    )
+    sigoctets = b"\x11\xF4z\xD5{sB\xC0\xAB\xAE\x87\x8B\x1E\x16\xAD\xEE" + newsig.encode(
+        "utf-8"
+    )
     guid = _sigoctets_to_uuid(sigoctets)
-    return {'IID': guid, '_signature': newsig, '_typeparam': generics}
+    return {"IID": guid, "_signature": newsig, "_typeparam": generics}
 
 
 def fqn(t):
@@ -227,17 +257,19 @@ def fqn(t):
 
 def pinterface_type(name, piid, typeparams, bases):
     attrs = generate_parameterized_attrs(piid, *typeparams)
-    cls = type('%s(%s)' % (name, ','.join(map(fqn, typeparams))), bases, attrs)
+    cls = type("%s(%s)" % (name, ",".join(map(fqn, typeparams))), bases, attrs)
     return cls
 
 
 def define_winrt_com_delegate(cls, *argtypes, retval=None):
     from . import delegate
+
     if retval is not None:
-        define_winrt_com_method(cls, 'Invoke', *argtypes, POINTER(retval), vtbl=3)
+        define_winrt_com_method(cls, "Invoke", *argtypes, POINTER(retval), vtbl=3)
     else:
-        define_winrt_com_method(cls, 'Invoke', *argtypes, vtbl=3)
+        define_winrt_com_method(cls, "Invoke", *argtypes, vtbl=3)
     cls._funcproto = delegate.proto(cls, *argtypes, retval=retval)
+
 
 # def runtimeclass2(cls: type):
 #     clsname = getattr(cls, '_runtimeclss_name_', None)
@@ -260,13 +292,15 @@ def define_winrt_com_delegate(cls, *argtypes, retval=None):
 #     newcls = type(clsname, tuple(bases), props)
 #     return newcls
 
+
 def runtimeclass_add_statics(cls, interface):
     methods = [x[1] for x in interface._method_defs]
     clsname = cls._runtimeclass_name
     statics = roapi.GetActivationFactory(clsname, interface)
     for method in methods:
         wrapped_method = getattr(statics, method)
+
         def wrapper(*args, **kwargs):
             return wrapped_method(*args, **kwargs)
+
         setattr(cls, method, staticmethod(wrapper))
-        

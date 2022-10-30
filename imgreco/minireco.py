@@ -6,16 +6,20 @@ from . import imgops
 
 # logger = richlog.get_logger('log/richlog.html', True)
 
+
 def compare_ccoeff(img, mat):
     height, width = mat.shape
     mat2 = np.asarray(img.resize((width, height), Image.BILINEAR))
     return imgops.compare_ccoeff(mat, mat2)
 
+
 def compare_ssim(img, mat):
     from skimage.metrics import structural_similarity as skcompare_ssim
+
     height, width = mat.shape
     mat2 = np.asarray(img.resize((width, height), Image.BILINEAR))
     return skcompare_ssim(mat, mat2, win_size=3)
+
 
 def compare_mse(img, mat):
     height, width = mat.shape
@@ -46,14 +50,16 @@ def split_chars(textimg, split_threshold=127):
             if spaces >= spacing_threshold:
                 inchar = False
                 if left != x:
-                    chars.append(imgops.crop_blackedge(Image.fromarray(mat[:, left:x+1])))
+                    chars.append(
+                        imgops.crop_blackedge(Image.fromarray(mat[:, left : x + 1]))
+                    )
         if not inchar and (col > split_threshold).any():
             left = x
             inchar = True
             spaces = 0
 
     if inchar and left != x:
-        chars.append(imgops.crop_blackedge(Image.fromarray(mat[:, left:x+1])))
+        chars.append(imgops.crop_blackedge(Image.fromarray(mat[:, left : x + 1])))
 
     # for cimg in chars:
     #     logger.logimage(cimg)
@@ -63,8 +69,8 @@ def split_chars(textimg, split_threshold=127):
 
 class MiniRecognizer:
     def __init__(self, model, compare=compare_mse):
-        self.model = model['data']
-        self.fontname = model['fontfile']
+        self.model = model["data"]
+        self.fontname = model["fontfile"]
         self.chars = tuple(x[0] for x in self.model)
         self.compare = compare
 
@@ -72,7 +78,10 @@ class MiniRecognizer:
         w1, h1 = image.size
         # comparsions = [(c, imgcompare(image, mat)) for c, mat in self.model]
         comparsions = []
-        aggreate_score = lambda img_comparsion, ratio_comparsion: img_comparsion - ratio_comparsion * 0.4
+        aggreate_score = (
+            lambda img_comparsion, ratio_comparsion: img_comparsion
+            - ratio_comparsion * 0.4
+        )
         for c, mats in self.model:
             if subset is not None and c not in subset:
                 continue
@@ -91,7 +100,7 @@ class MiniRecognizer:
             bestmatch = max(comparsions, key=lambda x: aggreate_score(*x[1:]))
             return bestmatch[0], aggreate_score(*bestmatch[1:])
         else:
-            return ''
+            return ""
 
     def recognize(self, image):
         """requires white chars on black background, grayscale image"""
@@ -99,14 +108,15 @@ class MiniRecognizer:
 
     def recognize2(self, image, split_threshold=127, subset=None):
         """requires white chars on black background, grayscale image"""
-        if image.mode != 'L':
-            image = image.convert('L')
+        if image.mode != "L":
+            image = image.convert("L")
         charimgs = split_chars(image, split_threshold)
         if charimgs:
             matches = [self.recognize_char(charimg, subset) for charimg in charimgs]
-            return ''.join(x[0] for x in matches), min(x[1] for x in matches)
+            return "".join(x[0] for x in matches), min(x[1] for x in matches)
         else:
-            return '', 1
+            return "", 1
+
 
 def check_charseq(string, seq):
     lastindex = -1
@@ -124,17 +134,18 @@ def check_charseq(string, seq):
 # FIXME: recognizer can't recognize [0o], [-i] well (the font is in sᴍᴀʟʟ ᴄᴀᴘs but we think it UPPERCASE)
 # FIXME: currently, we have no 'o' and 'i' in recognizer data as '0' and '-' are used more frequently
 
+
 def fix_stage_name(s):
-    if s.startswith('0') and not s.startswith('0-'):
-        return True, 'O' + s[1:]
-    elif s.startswith('-0'):
-        return True, 'O' + s[2:]
-    elif s.startswith('R--'):
-        return True, 'RI-' + s[3:]
-    elif s.startswith('B--'):
-        return True, 'BI-' + s[3:]
-    elif s.startswith('-W-'):
-        return True, 'IW-' + s[3:]
-    elif s.startswith('-C-'):
-        return True, 'IC-' + s[3:]
+    if s.startswith("0") and not s.startswith("0-"):
+        return True, "O" + s[1:]
+    elif s.startswith("-0"):
+        return True, "O" + s[2:]
+    elif s.startswith("R--"):
+        return True, "RI-" + s[3:]
+    elif s.startswith("B--"):
+        return True, "BI-" + s[3:]
+    elif s.startswith("-W-"):
+        return True, "IW-" + s[3:]
+    elif s.startswith("-C-"):
+        return True, "IC-" + s[3:]
     return False, s

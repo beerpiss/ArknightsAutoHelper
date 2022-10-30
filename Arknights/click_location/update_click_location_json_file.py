@@ -1,6 +1,17 @@
-JSON_PARAMS = ['LOCATION_JSON_NAME', 'WITH_SCREEN', 'CLICK_LOCATION_INFO', 'CLICK_LOCATION', 'MAP_LOCATION',
-               'SWIPE_LOCATION', 'LIZHI_CONSUME', 'BATTLE_SELECTORS', 'MAIN_TASK_CHAPTER_SWIPE',
-               'MAIN_TASK_BATTLE_SWIPE', 'MAIN_TASK_SUPPORT', 'DAILY_LIST']
+JSON_PARAMS = [
+    "LOCATION_JSON_NAME",
+    "WITH_SCREEN",
+    "CLICK_LOCATION_INFO",
+    "CLICK_LOCATION",
+    "MAP_LOCATION",
+    "SWIPE_LOCATION",
+    "LIZHI_CONSUME",
+    "BATTLE_SELECTORS",
+    "MAIN_TASK_CHAPTER_SWIPE",
+    "MAIN_TASK_BATTLE_SWIPE",
+    "MAIN_TASK_SUPPORT",
+    "DAILY_LIST",
+]
 JSON_DATAS = {}
 a = globals().copy()
 
@@ -23,4 +34,4 @@ while input_true:
 
 import json
 
-json.dump(JSON_DATAS, open('location.json', 'w', encoding='utf8'))
+json.dump(JSON_DATAS, open("location.json", "w", encoding="utf8"))

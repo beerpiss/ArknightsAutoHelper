@@ -5,7 +5,11 @@ from rotypes.Windows.Foundation import TypedEventHandler
 from rotypes.inspectable import IInspectable
 import rotypes.Windows.Graphics.Capture
 import rotypes.Windows.Graphics.DirectX
-from rotypes.Windows.Graphics.DirectX.Direct3D11 import IDirect3DDxgiInterfaceAccess, CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDevice
+from rotypes.Windows.Graphics.DirectX.Direct3D11 import (
+    IDirect3DDxgiInterfaceAccess,
+    CreateDirect3D11DeviceFromDXGIDevice,
+    IDirect3DDevice,
+)
 
 from . import d3d11
 from . import cvimage as Image
@@ -13,6 +17,7 @@ from . import cvimage as Image
 import numpy as np
 
 PBYTE = ctypes.POINTER(ctypes.c_ubyte)
+
 
 class CaptureSession:
     def __init__(self):
@@ -38,7 +43,7 @@ class CaptureSession:
             d3d11.D3D11_SDK_VERSION,
             ctypes.byref(self._dxdevice),
             None,
-            ctypes.byref(self._immediatedc)
+            ctypes.byref(self._immediatedc),
         )
         self._rtdevice = CreateDirect3D11DeviceFromDXGIDevice(self._dxdevice)
         self._evtoken = None
@@ -46,17 +51,33 @@ class CaptureSession:
     def start(self, hwnd, capture_cursor=False):
         self.stop()
         self._create_device()
-        interop = rotypes.roapi.GetActivationFactory('Windows.Graphics.Capture.GraphicsCaptureItem').astype(rotypes.Windows.Graphics.Capture.IGraphicsCaptureItemInterop)
-        item = interop.CreateForWindow(hwnd, rotypes.Windows.Graphics.Capture.IGraphicsCaptureItem.GUID)
+        interop = rotypes.roapi.GetActivationFactory(
+            "Windows.Graphics.Capture.GraphicsCaptureItem"
+        ).astype(rotypes.Windows.Graphics.Capture.IGraphicsCaptureItemInterop)
+        item = interop.CreateForWindow(
+            hwnd, rotypes.Windows.Graphics.Capture.IGraphicsCaptureItem.GUID
+        )
         self._item = item
         self._last_size = item.Size
         self._reset_cputex(item.Size)
-        delegate = TypedEventHandler(rotypes.Windows.Graphics.Capture.GraphicsCaptureItem, IInspectable).delegate(self._closed_callback)
+        delegate = TypedEventHandler(
+            rotypes.Windows.Graphics.Capture.GraphicsCaptureItem, IInspectable
+        ).delegate(self._closed_callback)
         self._evtoken = item.add_Closed(delegate)
-        self._framepool = rotypes.Windows.Graphics.Capture.Direct3D11CaptureFramePool.CreateFreeThreaded(self._rtdevice, rotypes.Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, item.Size)
+        self._framepool = rotypes.Windows.Graphics.Capture.Direct3D11CaptureFramePool.CreateFreeThreaded(
+            self._rtdevice,
+            rotypes.Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized,
+            1,
+            item.Size,
+        )
         self._session = self._framepool.CreateCaptureSession(item)
         pool = self._framepool
-        pool.add_FrameArrived(TypedEventHandler(rotypes.Windows.Graphics.Capture.Direct3D11CaptureFramePool, IInspectable).delegate(self._frame_arrived_callback))
+        pool.add_FrameArrived(
+            TypedEventHandler(
+                rotypes.Windows.Graphics.Capture.Direct3D11CaptureFramePool,
+                IInspectable,
+            ).delegate(self._frame_arrived_callback)
+        )
         self._session.IsCursorCaptureEnabled = capture_cursor
         self._session.StartCapture()
 
@@ -102,7 +123,12 @@ class CaptureSession:
     def _reset_framepool(self, size, reset_device=False):
         if reset_device:
             self._create_device()
-        self._framepool.Recreate(self._rtdevice, rotypes.Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, size)
+        self._framepool.Recreate(
+            self._rtdevice,
+            rotypes.Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized,
+            1,
+            size,
+        )
         self._reset_cputex(size)
 
     def get_frame(self):
@@ -113,26 +139,39 @@ class CaptureSession:
         with frame:
             need_reset_framepool = False
             need_reset_device = False
-            if frame.ContentSize.Width != self._last_size.Width or frame.ContentSize.Height != self._last_size.Height:
+            if (
+                frame.ContentSize.Width != self._last_size.Width
+                or frame.ContentSize.Height != self._last_size.Height
+            ):
                 # print('size changed')
                 need_reset_framepool = True
                 self._last_size = frame.ContentSize
-            
+
             if need_reset_framepool:
                 self._reset_framepool(frame.ContentSize)
                 return self.get_frame()
             tex = None
             try:
-                tex = frame.Surface.astype(IDirect3DDxgiInterfaceAccess).GetInterface(d3d11.ID3D11Texture2D.GUID).astype(d3d11.ID3D11Texture2D)
+                tex = (
+                    frame.Surface.astype(IDirect3DDxgiInterfaceAccess)
+                    .GetInterface(d3d11.ID3D11Texture2D.GUID)
+                    .astype(d3d11.ID3D11Texture2D)
+                )
                 # desc = tex.GetDesc()
                 desc = self.cputex_desc
                 self._immediatedc.CopyResource(self.cputex, tex)
                 mapinfo = self._immediatedc.Map(self.cputex, 0, d3d11.D3D11_MAP_READ, 0)
-                mat = np.ctypeslib.as_array(ctypes.cast(mapinfo.pData, PBYTE), (desc.Height, mapinfo.RowPitch // 4, 4))[:, :desc.Width].copy()
-                img = Image.fromarray(mat, 'BGRA')
+                mat = np.ctypeslib.as_array(
+                    ctypes.cast(mapinfo.pData, PBYTE),
+                    (desc.Height, mapinfo.RowPitch // 4, 4),
+                )[:, : desc.Width].copy()
+                img = Image.fromarray(mat, "BGRA")
                 self._immediatedc.Unmap(self.cputex, 0)
             except OSError as e:
-                if e.winerror == d3d11.DXGI_ERROR_DEVICE_REMOVED or e.winerror == d3d11.DXGI_ERROR_DEVICE_RESET:
+                if (
+                    e.winerror == d3d11.DXGI_ERROR_DEVICE_REMOVED
+                    or e.winerror == d3d11.DXGI_ERROR_DEVICE_RESET
+                ):
                     need_reset_framepool = True
                     need_reset_device = True
                 else:
@@ -141,29 +180,36 @@ class CaptureSession:
                 if tex is not None:
                     tex.Release()
             if need_reset_framepool:
-                    self._reset_framepool(frame.ContentSize, need_reset_device)
-                    return self.get_frame()
+                self._reset_framepool(frame.ContentSize, need_reset_device)
+                return self.get_frame()
         return img
+
 
 def test():
     import time
     import cv2
+
     print(ctypes.windll.user32.SetThreadDpiAwarenessContext(ctypes.c_ssize_t(-4)))
-    hwnd = ctypes.windll.user32.FindWindowW('com.android.settings', None)  # Documents UI window of Windows Subsystem for Android
+    hwnd = ctypes.windll.user32.FindWindowW(
+        "com.android.settings", None
+    )  # Documents UI window of Windows Subsystem for Android
     # hwnd = ctypes.windll.user32.FindWindowW('CabinetWClass', None)  # random explorer window
     title = f"screenshot for window {hwnd}"
     cv2.namedWindow(title)
     print(title)
     session = CaptureSession()
-    state_box = [None, False, False] # frame, changed, stop
+    state_box = [None, False, False]  # frame, changed, stop
+
     def frame_callback(session):
         frame = session.get_frame()
         if frame is None:
             return
         state_box[0] = frame
         state_box[1] = True
+
     def close_callback(session):
         state_box[2] = True
+
     session.frame_callback = frame_callback
     session.close_callback = close_callback
     session.start(hwnd, False)
@@ -187,5 +233,6 @@ def test():
 
     cv2.destroyAllWindows()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test()

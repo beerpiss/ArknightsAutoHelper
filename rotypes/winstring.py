@@ -5,7 +5,11 @@ from .types import check_hresult
 
 combase = ctypes.windll.LoadLibrary("combase.dll")
 WindowsCreateString = combase.WindowsCreateString
-WindowsCreateString.argtypes = (ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p))
+WindowsCreateString.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint32,
+    ctypes.POINTER(ctypes.c_void_p),
+)
 WindowsCreateString.restype = check_hresult
 
 WindowsDeleteString = combase.WindowsDeleteString
@@ -26,7 +30,9 @@ class HSTRING(ctypes.c_void_p):
         u16str = s.encode("utf-16-le") + b"\x00\x00"
         u16len = (len(u16str) // 2) - 1
         WindowsCreateString(u16str, ctypes.c_uint32(u16len), ctypes.byref(self))
-        self._finalizer = weakref.finalize(self, WindowsDeleteString, self.value)  # only register finalizer if we created the string
+        self._finalizer = weakref.finalize(
+            self, WindowsDeleteString, self.value
+        )  # only register finalizer if we created the string
 
     def __str__(self):
         if self.value is None:

@@ -5,7 +5,7 @@ from . import dummy
 from .common import OcrEngine, OcrHint, OcrLine, OcrResult, OcrWord
 import atexit
 
-available_engines = ['tesseract', 'windows_media_ocr', 'baidu']
+available_engines = ["tesseract", "windows_media_ocr", "baidu"]
 """
 适配的 engine 列表
 一个 engine 需要实现以下接口：
@@ -38,7 +38,8 @@ def _auto_impl():
 @lru_cache()
 def get_config_impl():
     import app
-    if app.config.ocr.backend == 'auto':
+
+    if app.config.ocr.backend == "auto":
         engine = _auto_impl()
     else:
         engine = get_impl(app.config.ocr.backend)
@@ -50,11 +51,13 @@ def acquire_engine_global_cached(lang, **kwargs) -> OcrEngine:
     impl = get_config_impl()
     return impl.Engine(lang, **kwargs)
 
+
 atexit.register(acquire_engine_global_cached.cache_clear)
 
 
 def match_distance(text, collection):
     import textdistance
+
     comparisions = []
     for index, item in enumerate(collection):
         if text == item:

@@ -6,10 +6,10 @@ import logging
 from .platform import isatty, check_control_code, getch_timeout
 from .termop import TermOp
 
-logger = logging.getLogger('fancywait')
+logger = logging.getLogger("fancywait")
 
-stdinfd = getattr(sys.stdout, 'buffer', sys.stdout)
-stdinfd = getattr(stdinfd, 'raw', stdinfd)
+stdinfd = getattr(sys.stdout, "buffer", sys.stdout)
+stdinfd = getattr(stdinfd, "raw", stdinfd)
 
 has_tty_input = isatty(stdinfd)
 
@@ -41,18 +41,19 @@ class StatusLineFancy(StatusLineBase):
 
     def update(self, text):
         with self.op.keep_cursor():
-            self.io.write(("\r\033[0m\033[K%s\033[0m\033[K\r" % text).encode('utf-8'))
+            self.io.write(("\r\033[0m\033[K%s\033[0m\033[K\r" % text).encode("utf-8"))
 
     def cleanup(self):
-        self.io.write(b'\033[0m\033[2K')
+        self.io.write(b"\033[0m\033[2K")
         self.io.flush()
+
 
 class StatusLineLegacy(StatusLineBase):
     def __init__(self, io):
         self.io = io
 
     def update(self, text):
-        self.io.write(("\r%s\r" % text).encode('utf-8'))
+        self.io.write(("\r%s\r" % text).encode("utf-8"))
 
     def cleanup(self):
         self.io.write(b"\r\n")
@@ -72,16 +73,17 @@ class KeyHandler:
 
 
 if has_tty_input and check_control_code():
-    logger.debug('has tty input and control code')
+    logger.debug("has tty input and control code")
     StatusLine = StatusLineFancy
 elif has_tty_input and stdinfd.isatty():
-    logger.debug('has tty input and legacy conhost')
+    logger.debug("has tty input and legacy conhost")
     StatusLine = StatusLineLegacy
 else:
-    logger.debug('no tty input')
+    logger.debug("no tty input")
     StatusLine = StatusLineDummy
 
 if has_tty_input:
+
     def fancy_delay(timeout, status=None, key_handlers=None):
         t0 = time.monotonic()
         timeout0 = timeout
@@ -99,7 +101,7 @@ if has_tty_input:
                 if elapsed > timeout0:
                     return
                 text = "[WAIT] %d/%d\t  " % (elapsed, timeout0)
-                labels = '  '.join(x.label for x in key_handlers if x.label is not None)
+                labels = "  ".join(x.label for x in key_handlers if x.label is not None)
                 text += labels
                 chs = {x.ch: x for x in key_handlers if x.label is not None}
                 status.update(text)
@@ -118,7 +120,9 @@ if has_tty_input:
                     waittime = 1 - (elapsed % 1)
         finally:
             status.cleanup()
+
 else:
+
     def fancy_delay(timeout, *args, **kwargs):
         return time.sleep(timeout)
 
@@ -126,34 +130,39 @@ else:
 def main():
     # enable_escape_code()
     with StatusLine(stdinfd) as statusline:
+
         def enter(handler):
             raise StopIteration()
+
         def toggle(handler):
             toggle.status = not toggle.status
-            onoff = 'ON' if toggle.status else 'OFF'
-            handler.label = '<r> Toggle automatic sanity refill (%s)' % onoff
+            onoff = "ON" if toggle.status else "OFF"
+            handler.label = "<r> Toggle automatic sanity refill (%s)" % onoff
+
         toggle.status = True
-        enterhandler = KeyHandler('<ENTER> to skip', b'\r', enter)
-        togglehandler = KeyHandler('<r> Toggle automatic sanity refill (ON)', b'r', toggle)
-        dummyskip = KeyHandler('           ', b'', lambda _: None)
-        print('hello')
+        enterhandler = KeyHandler("<ENTER> to skip", b"\r", enter)
+        togglehandler = KeyHandler(
+            "<r> Toggle automatic sanity refill (ON)", b"r", toggle
+        )
+        dummyskip = KeyHandler("           ", b"", lambda _: None)
+        print("hello")
         time.sleep(2)
-        print('world1')
-        print('world2')
-        print('world3')
-        print('world3')
-        print('world3')
-        print('world3')
+        print("world1")
+        print("world2")
+        print("world3")
+        print("world3")
+        print("world3")
+        print("world3")
         t = time.monotonic()
         fancy_delay(20, statusline, [enterhandler, togglehandler])
         print(time.monotonic() - t)
         time.sleep(1)
         fancy_delay(3, statusline, [dummyskip, togglehandler])
-        print('world3')
-        print('world3')
-        print('world3')
-        print('fuck')
+        print("world3")
+        print("world3")
+        print("world3")
+        print("fuck")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -5,13 +5,14 @@ from abc import ABC, abstractmethod
 
 from automator.control.types import Controller
 
+
 class Frontend(ABC):
     @abstractmethod
     def attach(self, helper):
         pass
 
     @abstractmethod
-    def alert(self, title, text, level='info', details=None):
+    def alert(self, title, text, level="info", details=None):
         """user-targeted message"""
 
     @abstractmethod
@@ -31,6 +32,7 @@ class Frontend(ABC):
     @abstractmethod
     def context(self) -> AbstractContextManager[None]:
         return nullcontext()
+
 
 class DummyFrontend(Frontend):
     pass

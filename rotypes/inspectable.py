@@ -11,12 +11,16 @@ CoTaskMemFree = windll.ole32.CoTaskMemFree
 CoTaskMemFree.argtypes = (c_void_p,)
 
 # unknwn
-@GUID('00000000-0000-0000-C000-000000000046')
+@GUID("00000000-0000-0000-C000-000000000046")
 class IUnknown(c_void_p):
     _method_defs = [
-        (0, 'QueryInterface', WINFUNCTYPE(check_hresult, REFGUID, VOIDPP)(0, "QueryInterface")),
-        (1, 'AddRef', WINFUNCTYPE(ULONG)(1, "AddRef")),
-        (2, 'Release', WINFUNCTYPE(ULONG)(2, "Release"))
+        (
+            0,
+            "QueryInterface",
+            WINFUNCTYPE(check_hresult, REFGUID, VOIDPP)(0, "QueryInterface"),
+        ),
+        (1, "AddRef", WINFUNCTYPE(ULONG)(1, "AddRef")),
+        (2, "Release", WINFUNCTYPE(ULONG)(2, "Release")),
     ]
     QueryInterface = funcwrap(_method_defs[0][2])
     _AddRef = funcwrap(_method_defs[1][2])
@@ -53,10 +57,12 @@ class TrustLevel:
     PartialTrust = 1
     FullTrust = 2
 
-@GUID('AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90')
+
+@GUID("AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90")
 class IInspectable(IUnknown):
     def __class_getitem__(cls, name):
         return cls
+
     def __init_subclass__(cls, requires=()):
         super().__init_subclass__()
 
@@ -69,16 +75,21 @@ class IInspectable(IUnknown):
         return result
 
 
-
-define_winrt_com_method(IInspectable, '_GetIids', POINTER(ULONG), POINTER(REFGUID), vtbl=3)
-define_winrt_com_method(IInspectable, 'GetRuntimeClassName', retval=HSTRING, vtbl=4)
-define_winrt_com_method(IInspectable, 'GetTrustLevel', retval=TrustLevel._enum_type_, vtbl=5)
+define_winrt_com_method(
+    IInspectable, "_GetIids", POINTER(ULONG), POINTER(REFGUID), vtbl=3
+)
+define_winrt_com_method(IInspectable, "GetRuntimeClassName", retval=HSTRING, vtbl=4)
+define_winrt_com_method(
+    IInspectable, "GetTrustLevel", retval=TrustLevel._enum_type_, vtbl=5
+)
 
 
 # activation
-@GUID('00000035-0000-0000-c000-000000000046')
+@GUID("00000035-0000-0000-c000-000000000046")
 class IActivationFactory(IInspectable):
     pass
 
 
-define_winrt_com_method(IActivationFactory, 'ActivateInstance', retval=IInspectable, vtbl=6)
+define_winrt_com_method(
+    IActivationFactory, "ActivateInstance", retval=IInspectable, vtbl=6
+)

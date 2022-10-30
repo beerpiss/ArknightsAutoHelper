@@ -6,9 +6,10 @@ from app.schema import ControllerConfig
 
 from .config_store import YamlConfigStore
 
-db_file = app.config_path / 'device-config-v2.yaml'
+db_file = app.config_path / "device-config-v2.yaml"
 
 store = YamlConfigStore(db_file)
+
 
 class PresistentDeviceConfig(ControllerConfig):
     device_identifier: str = None
@@ -31,9 +32,10 @@ def get_device(name):
     else:
         mapping = schemadef._generate_default_store(PresistentDeviceConfig, 2)
         mapping.update(app.config.device.defaults._mapping)
-        mapping.yaml_end_comment_extend(['\n'])
+        mapping.yaml_end_comment_extend(["\n"])
         record = PresistentDeviceConfig(mapping, name, store)
     return record
+
 
 def contains(name):
     return name in store.root

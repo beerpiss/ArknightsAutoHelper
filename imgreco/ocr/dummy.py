@@ -7,6 +7,7 @@ info = "Dummy OCR Engine"
 
 # 模块说明，用于在 log 中显示
 
+
 def check_supported():
     """返回模块是否可用"""
     return False
@@ -34,8 +35,9 @@ def recognize(img, lang, *, hints=None):
     OcrWord = {
         text: str,
         rect: Rect,
-        extra: Any     
+        extra: Any
     }
     """
     from .common import OcrResult
+
     return OcrResult([])

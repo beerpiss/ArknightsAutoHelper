@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Callable, Any, Sequence, ClassVar, Optional, Type
 
@@ -11,25 +12,31 @@ from collections import OrderedDict
 from random import randint, uniform
 from Arknights.flags import *
 
-from resources.imgreco.map_vectors import stage_maps_linear, is_invalid_stage, mainline_stages
+from resources.imgreco.map_vectors import (
+    stage_maps_linear,
+    is_invalid_stage,
+    mainline_stages,
+)
+
 known_stages_ocr = [x for v in stage_maps_linear.values() for x in v]
 
 
 def get_stage_path(stage):
-    parts = stage.split('-')
+    parts = stage.split("-")
     part0 = parts[0]
     if stage.upper() in mainline_stages:  # '1-7', 'S4-1', etc
-        ep_num = ''.join(filter(str.isdigit, part0))
-        return ['main', 'ep%02d' % int(ep_num), stage]
-    elif part0 in ('LS', 'AP', 'SK', 'CE', 'CA'):
-        return ['material', part0, stage]
-    elif part0 == 'PR' and parts[1] in ('A', 'B', 'C', 'D'):
-        return ['soc', 'PR-' + parts[1], stage]
+        ep_num = "".join(filter(str.isdigit, part0))
+        return ["main", "ep%02d" % int(ep_num), stage]
+    elif part0 in ("LS", "AP", "SK", "CE", "CA"):
+        return ["material", part0, stage]
+    elif part0 == "PR" and parts[1] in ("A", "B", "C", "D"):
+        return ["soc", "PR-" + parts[1], stage]
     return None
 
 
 def is_stage_supported_ocr(stage):
     return stage in known_stages_ocr and not is_invalid_stage(stage)
+
 
 @dataclass
 class _custom_stage_record:
@@ -40,6 +47,7 @@ class _custom_stage_record:
     description: Optional[str] = None
     ignore_count: bool = False
 
+
 @dataclass
 class _navigator_record:
     owner: Type[AddonBase]
@@ -47,10 +55,19 @@ class _navigator_record:
     query: Callable[..., bool]
     navigate: Callable[..., None]
 
+
 _custom_stage_registry: OrderedDict[str, _custom_stage_record] = OrderedDict()
 _navigator_registry: list[_navigator_record] = []
+
+
 class custom_stage:
-    def __init__(self, name, ignore_count=False, title: Optional[str] = None, description: Optional[str] = None):
+    def __init__(
+        self,
+        name,
+        ignore_count=False,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
         if callable(name):
             self.fn = self.name
             self.name = name.__name__
@@ -60,17 +77,26 @@ class custom_stage:
         self.ignore_count = ignore_count
         self.title = title
         self.description = description
-    
+
     def __call__(self, func):
         self.fn = func
         return self
-    
+
     def __set_name__(self, owner, name):
-        _custom_stage_registry[self.name] = _custom_stage_record(owner, self.name, self.fn, self.title, self.description, self.ignore_count)
+        _custom_stage_registry[self.name] = _custom_stage_record(
+            owner, self.name, self.fn, self.title, self.description, self.ignore_count
+        )
         setattr(owner, name, self.fn)
 
+
 class navigator:
-    def __init__(self, tag=None, *, query: Optional[Callable[[Type[AddonBase], str], bool]] = None, naivgate: Optional[Callable[[Type[AddonBase], str], None]] = None):
+    def __init__(
+        self,
+        tag=None,
+        *,
+        query: Optional[Callable[[Type[AddonBase], str], bool]] = None,
+        naivgate: Optional[Callable[[Type[AddonBase], str], None]] = None,
+    ):
         if callable(tag):
             self._query = tag
             self.tag = None
@@ -78,24 +104,30 @@ class navigator:
             self.tag = tag
             self._query = query
         self._navigate = naivgate
+
     def __call__(self, func):
         self._query = func
         return self
+
     def navigate(self, fn):
         self._navigate = fn
         return fn
+
     def __set_name__(self, owner, name):
         if self._query is None:
-            raise ValueError('navigator must have a query function')
+            raise ValueError("navigator must have a query function")
         if self._navigate is None:
-            raise ValueError('navigator must have a navigate function')
+            raise ValueError("navigator must have a navigate function")
         if self.tag is None:
             self.tag = owner.__name__
-        _navigator_registry.append(_navigator_record(owner, self.tag, self._query, self._navigate))
+        _navigator_registry.append(
+            _navigator_record(owner, self.tag, self._query, self._navigate)
+        )
         setattr(owner, name, self.navigate)
 
+
 def _auto_extra_help():
-    append_helptext = ['']
+    append_helptext = [""]
     for name, record in _custom_stage_registry.items():
         text = f"            {record.name}"
         if record.title is not None:
@@ -103,11 +135,14 @@ def _auto_extra_help():
             if record.description is not None:
                 text += f": {record.description}"
         append_helptext.append(text)
-    return '\n'.join(append_helptext)
+    return "\n".join(append_helptext)
+
 
 class StageNavigator(AddonBase):
     def on_attach(self) -> None:
-        self.extra_handlers: list[tuple[Callable[[str], bool], Callable[[str], Any]]] = []
+        self.extra_handlers: list[
+            tuple[Callable[[str], bool], Callable[[str], Any]]
+        ] = []
         self.handler_cache = {}
 
     def is_stage_supported(self, stage):
@@ -117,7 +152,9 @@ class StageNavigator(AddonBase):
             self.logger.debug("querying %s for stage %s navigation", record.tag, stage)
             result = record.query(self.addon(record.owner), stage)
             if result:
-                self.handler_cache[stage] = lambda stage: record.navigate(self.addon(record.owner), stage)
+                self.handler_cache[stage] = lambda stage: record.navigate(
+                    self.addon(record.owner), stage
+                )
                 return True
         return False
 
@@ -129,22 +166,23 @@ class StageNavigator(AddonBase):
 
     def find_and_tap(self, partition, target):
         import imgreco.map
+
         lastpos = None
         while True:
             screenshot = self.screenshot()
             recoresult = imgreco.map.recognize_map(screenshot, partition)
             if recoresult is None:
                 # TODO: retry
-                self.logger.error('Failed to locate level')
-                raise RuntimeError('recognition failed')
+                self.logger.error("Failed to locate level")
+                raise RuntimeError("recognition failed")
             if target in recoresult:
                 pos = recoresult[target]
-                self.logger.info('Target %s, coordinate: %s', target, pos)
+                self.logger.info("Target %s, coordinate: %s", target, pos)
                 if lastpos is not None and tuple(pos) == tuple(lastpos):
-                    self.logger.error('Coordinate did not change after dragging')
-                    raise RuntimeError('Coordinate did not change after dragging')
+                    self.logger.error("Coordinate did not change after dragging")
+                    raise RuntimeError("Coordinate did not change after dragging")
                 if 0 < pos[0] < self.viewport[0]:
-                    self.logger.info('Target is in visible area, tapping')
+                    self.logger.info("Target is in visible area, tapping")
                     self.control.touch_tap(pos, offsets=(5, 5))
                     self.delay(3)
                     break
@@ -153,20 +191,28 @@ class StageNavigator(AddonBase):
                     originX = self.viewport[0] // 2 + randint(-100, 100)
                     originY = self.viewport[1] // 2 + randint(-100, 100)
                     if pos[0] < 0:  # target in left of viewport
-                        self.logger.info('Target is to the left of the visible area, drag to the right')
+                        self.logger.info(
+                            "Target is to the left of the visible area, drag to the right"
+                        )
                         # swipe right
                         diff = -pos[0]
                         if abs(diff) < 100:
                             diff = 120
                         diff = min(diff, self.viewport[0] - originX)
                     elif pos[0] > self.viewport[0]:  # target in right of viewport
-                        self.logger.info('The target is to the right of the visible area, drag to the left')
+                        self.logger.info(
+                            "The target is to the right of the visible area, drag to the left"
+                        )
                         # swipe left
                         diff = self.viewport[0] - pos[0]
                         if abs(diff) < 100:
                             diff = -120
                         diff = max(diff, -originX)
-                    self.control.touch_swipe2((originX, originY), (diff * 0.7 * uniform(0.8, 1.2), 0), max(250, diff / 2))
+                    self.control.touch_swipe2(
+                        (originX, originY),
+                        (diff * 0.7 * uniform(0.8, 1.2), 0),
+                        max(250, diff / 2),
+                    )
                     self.delay(5)
                     continue
 
@@ -178,120 +224,153 @@ class StageNavigator(AddonBase):
         import imgreco.map
         import imgreco.stage_ocr
         from resources.imgreco.map_vectors import ep2region, region2ep
+
         target_region = ep2region.get(target)
         if target_region is None:
-            self.logger.error(f'Failed to locate chapter, target: {target}')
-            raise RuntimeError('recognition failed')
+            self.logger.error(f"Failed to locate chapter, target: {target}")
+            raise RuntimeError("recognition failed")
         vw, vh = imgreco.common.get_vwvh(self.viewport)
-        episode_tag_rect = tuple(map(int, (34.861*vh, 40.139*vh, 50.139*vh, 43.194*vh)))
-        next_ep_region_rect = (6.389*vh, 73.750*vh, 33.889*vh, 80.417*vh)
-        prev_ep_region_rect = (6.389*vh, 15.556*vh, 33.889*vh, 22.083*vh)
-        current_ep_rect = (50*vw+19.907*vh, 28.426*vh, 50*vw+63.426*vh, 71.944*vh)
-        episode_move = (400 * self.viewport[1] / 1080)
+        episode_tag_rect = tuple(
+            map(int, (34.861 * vh, 40.139 * vh, 50.139 * vh, 43.194 * vh))
+        )
+        next_ep_region_rect = (6.389 * vh, 73.750 * vh, 33.889 * vh, 80.417 * vh)
+        prev_ep_region_rect = (6.389 * vh, 15.556 * vh, 33.889 * vh, 22.083 * vh)
+        current_ep_rect = (
+            50 * vw + 19.907 * vh,
+            28.426 * vh,
+            50 * vw + 63.426 * vh,
+            71.944 * vh,
+        )
+        episode_move = 400 * self.viewport[1] / 1080
 
         while True:
             screenshot = self.screenshot()
             current_episode_tag = screenshot.crop(episode_tag_rect)
             current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag, 1)
-            self.logger.info(f'Current chapter: {current_episode_str}')
-            if not current_episode_str.startswith('EPISODE'):
-                self.logger.error(f'Failed recognizing chapter, current_episode_str: {current_episode_str}')
-                raise RuntimeError('recognition failed')
+            self.logger.info(f"Current chapter: {current_episode_str}")
+            if not current_episode_str.startswith("EPISODE"):
+                self.logger.error(
+                    f"Failed recognizing chapter, current_episode_str: {current_episode_str}"
+                )
+                raise RuntimeError("recognition failed")
             current_episode = int(current_episode_str[-2:])
             current_region = ep2region.get(current_episode)
             if current_region is None:
-                self.logger.error(f'Failed locating chapter, current_episode: {current_episode}')
-                raise RuntimeError('recognition failed')
+                self.logger.error(
+                    f"Failed locating chapter, current_episode: {current_episode}"
+                )
+                raise RuntimeError("recognition failed")
             if current_region == target_region:
                 break
             if current_region > target_region:
-                self.logger.info(f'Going to previous act')
+                self.logger.info(f"Going to previous act")
                 self.tap_rect(prev_ep_region_rect)
             else:
-                self.logger.info(f'Going to next act')
+                self.logger.info(f"Going to next act")
                 self.tap_rect(next_ep_region_rect)
         while current_episode != target:
-            move = min(abs(current_episode - target), 2) * episode_move * (1 if current_episode > target else -1)
+            move = (
+                min(abs(current_episode - target), 2)
+                * episode_move
+                * (1 if current_episode > target else -1)
+            )
             self.swipe_screen(move, 10, self.viewport[0] // 4 * 3)
             self.delay(0.5)
             screenshot = self.screenshot()
             current_episode_tag = screenshot.crop(episode_tag_rect)
             current_episode_str = imgreco.stage_ocr.do_img_ocr(current_episode_tag, 1)
-            self.logger.info(f'Current chapter: {current_episode_str}')
+            self.logger.info(f"Current chapter: {current_episode_str}")
             current_episode = int(current_episode_str[-2:])
 
-        self.logger.info(f'Going to chapter: {current_episode_str}')
+        self.logger.info(f"Going to chapter: {current_episode_str}")
         self.tap_rect(current_ep_rect)
 
     def find_and_tap_stage_by_ocr(self, partition, target, partition_map=None):
         import imgreco.stage_ocr
+
         target = target.upper()
         if partition_map is None:
             from resources.imgreco.map_vectors import stage_maps_linear
+
             partition_map = stage_maps_linear[partition]
         target_index = partition_map.index(target)
         while True:
             screenshot = self.screenshot()
             tags_map = imgreco.stage_ocr.recognize_all_screen_stage_tags(screenshot)
             if not tags_map:
-                tags_map = imgreco.stage_ocr.recognize_all_screen_stage_tags(screenshot, allow_extra_icons=True)
+                tags_map = imgreco.stage_ocr.recognize_all_screen_stage_tags(
+                    screenshot, allow_extra_icons=True
+                )
                 if not tags_map:
-                    self.logger.error('Failed locating level')
-                    raise RuntimeError('recognition failed')
-            self.logger.debug('tags map: ' + repr(tags_map))
+                    self.logger.error("Failed locating level")
+                    raise RuntimeError("recognition failed")
+            self.logger.debug("tags map: " + repr(tags_map))
             pos = tags_map.get(target)
             if pos:
-                self.logger.info('Operation in visible area, tapping')
+                self.logger.info("Operation in visible area, tapping")
                 self.control.touch_tap(pos, offsets=(5, 5))
                 self.delay(1)
                 return
 
-            known_indices = [partition_map.index(x) for x in tags_map.keys() if x in partition_map]
+            known_indices = [
+                partition_map.index(x) for x in tags_map.keys() if x in partition_map
+            ]
 
             originX = self.viewport[0] // 2 + randint(-100, 100)
             originY = self.viewport[1] // 2 + randint(-100, 100)
             move = randint(self.viewport[0] // 4, self.viewport[0] // 3)
 
             if all(x > target_index for x in known_indices):
-                self.logger.info('Target is to the left of the visible area, dragging to the right')
+                self.logger.info(
+                    "Target is to the left of the visible area, dragging to the right"
+                )
             elif all(x < target_index for x in known_indices):
                 move = -move
-                self.logger.info('The target is to the right of the visible area, dragging to the left')
+                self.logger.info(
+                    "The target is to the right of the visible area, dragging to the left"
+                )
             else:
-                self.logger.error('Failed locating operation')
-                raise RuntimeError('recognition failed')
+                self.logger.error("Failed locating operation")
+                raise RuntimeError("recognition failed")
             self.control.touch_swipe2((originX, originY), (move, max(250, move // 2)))
             self.delay(1)
 
     def find_and_tap_daily(self, partition, target, *, recursion=0):
         import imgreco.map
+
         screenshot = self.screenshot()
         recoresult = imgreco.map.recognize_daily_menu(screenshot, partition)
         if target in recoresult:
             pos, conf = recoresult[target]
-            self.logger.info('Target %s, coordinates=%s difference=%f', target, pos, conf)
+            self.logger.info(
+                "Target %s, coordinates=%s difference=%f", target, pos, conf
+            )
             offset = self.viewport[1] * 0.12  ## 24vh * 24vh range
             self.tap_rect((*(pos - offset), *(pos + offset)))
         else:
             if recursion == 0:
                 originX = self.viewport[0] // 2 + randint(-100, 100)
                 originY = self.viewport[1] // 2 + randint(-100, 100)
-                if partition == 'material':
-                    self.logger.info('The target may be to the left of the visible area, drag to the right')
+                if partition == "material":
+                    self.logger.info(
+                        "The target may be to the left of the visible area, drag to the right"
+                    )
                     offset = self.viewport[0] * 0.2
-                elif partition == 'soc':
-                    self.logger.info('The target may be to the right of the visible area, drag to the left')
+                elif partition == "soc":
+                    self.logger.info(
+                        "The target may be to the right of the visible area, drag to the left"
+                    )
                     offset = -self.viewport[0] * 0.2
                 else:
-                    self.logger.error('Unknown category')
+                    self.logger.error("Unknown category")
                     raise StopIteration()
                 self.control.touch_swipe2((originX, originY), (offset, 0), 400)
                 self.delay(2)
-                self.find_and_tap_daily(partition, target, recursion=recursion+1)
+                self.find_and_tap_daily(partition, target, recursion=recursion + 1)
             else:
-                self.logger.error('未找到目标，是否未开放关卡？')
+                self.logger.error("未找到目标，是否未开放关卡？")
 
-    @navigator('builtin')
+    @navigator("builtin")
     def is_stage_supported_builtin(self, c_id):
         result = is_stage_supported_ocr(c_id)
         return result
@@ -301,32 +380,33 @@ class StageNavigator(AddonBase):
         import imgreco.common
         import imgreco.main
         import imgreco.map
+
         path = get_stage_path(stage)
         self.addon(CommonAddon).back_to_main()
-        self.logger.info('Entering operation')
+        self.logger.info("Entering operation")
         self.tap_quadrilateral(imgreco.main.get_ballte_corners(self.screenshot()))
         self.delay(TINY_WAIT)
-        if path[0] == 'main':
+        if path[0] == "main":
             vw, vh = imgreco.common.get_vwvh(self.viewport)
-            self.tap_rect((16.328*vw, 90.417*vh, 20.469*vw, 95.972*vh))
+            self.tap_rect((16.328 * vw, 90.417 * vh, 20.469 * vw, 95.972 * vh))
             self.find_and_tap_episode_by_ocr(int(path[1][2:]))
             self.find_and_tap_stage_by_ocr(path[1], path[2])
-        elif path[0] == 'material' or path[0] == 'soc':
-            self.logger.info('Selecting category')
+        elif path[0] == "material" or path[0] == "soc":
+            self.logger.info("Selecting category")
             self.tap_rect(imgreco.map.get_daily_menu_entry(self.viewport, path[0]))
             self.find_and_tap_daily(path[0], path[1])
             self.find_and_tap_stage_by_ocr(path[1], path[2])
         else:
             raise NotImplementedError()
 
-    def navigate_and_combat(self,  # 完整的战斗模块
-                            c_id: str,  # 选择的关卡
-                            set_count=1000):  # 作战次数
+    def navigate_and_combat(
+        self, c_id: str, set_count=1000  # 完整的战斗模块  # 选择的关卡
+    ):  # 作战次数
         c_id = c_id.upper()
         if self.is_stage_supported(c_id):
             self.goto_stage(c_id)
         else:
-            self.logger.error('Unsupported level: %s', c_id)
+            self.logger.error("Unsupported level: %s", c_id)
             raise ValueError(c_id)
         return self.addon(CombatAddon).combat_on_current_stage(set_count, c_id)
 
@@ -360,18 +440,18 @@ class StageNavigator(AddonBase):
                     continue
             else:
                 if not self.is_stage_supported(current):
-                    raise ValueError('Unsupported levels: %s' % current)
+                    raise ValueError("Unsupported levels: %s" % current)
             try:
                 count_str = next(it)
                 count = int(count_str)
             except StopIteration:
-                raise ValueError('count expected after %r' % current)
+                raise ValueError("count expected after %r" % current)
             except ValueError:
-                raise ValueError('invalid count: %r' % count)
+                raise ValueError("invalid count: %r" % count)
             result.append((current, count))
         return result
 
-    @cli_command('auto')
+    @cli_command("auto")
     def cli_auto(self, argv):
         """
         auto [+-rR[N]] TARGET_DESC [TARGET_DESC]...
@@ -382,7 +462,7 @@ class StageNavigator(AddonBase):
         ops = _parse_opt(argv)
         arglist = argv[1:]
         if len(arglist) == 0:
-            print('usage: auto [+-rR] stage1 count1 [stage2 count2] ...')
+            print("usage: auto [+-rR] stage1 count1 [stage2 count2] ...")
             return 1
         it = iter(arglist)
         tasks = self.parse_target_desc(arglist)

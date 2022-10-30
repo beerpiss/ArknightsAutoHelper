@@ -30,12 +30,12 @@ else:
     root = Path(__file__).parent.parent.absolute()
 
 try:
-    if not bundled and Path.joinpath(root, '.git').exists():
+    if not bundled and Path.joinpath(root, ".git").exists():
         from app.scm_version import version
     else:
         from app.release_info import version
 except ImportError:
-    version = 'UNKNOWN'
+    version = "UNKNOWN"
 
 if use_state_separation is None:
     # TODO: check for writable base directory
@@ -45,34 +45,36 @@ if use_state_separation:
     system = sys.platform
     if system == "win32":
         # TODO: windows user data dir
-        platform_appdata_path = Path(os.getenv('LOCALAPPDATA'))
-    elif system == 'darwin':
-        platform_appdata_path = Path(os.path.expanduser('~/Library/Preferences'))
+        platform_appdata_path = Path(os.getenv("LOCALAPPDATA"))
+    elif system == "darwin":
+        platform_appdata_path = Path(os.path.expanduser("~/Library/Preferences"))
     else:
-        platform_appdata_path = Path(os.getenv('XDG_CONFIG_HOME', os.path.expanduser("~/.config")))
-    writable_root = platform_appdata_path / 'ArknightsAutoHelper'
-elif 'AKHELPER_STATE_DIR' in os.environ:
-    writable_root = Path(os.environ['AKHELPER_STATE_DIR'])
+        platform_appdata_path = Path(
+            os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+        )
+    writable_root = platform_appdata_path / "ArknightsAutoHelper"
+elif "AKHELPER_STATE_DIR" in os.environ:
+    writable_root = Path(os.environ["AKHELPER_STATE_DIR"])
 else:
     writable_root = root
 
 background = False
-screenshot_path = Path.joinpath(writable_root, 'screenshot')
-config_path = Path.joinpath(writable_root, 'config')
-cache_path = Path.joinpath(writable_root, 'cache')
-extra_items_path = Path.joinpath(writable_root, 'extra_items')
-config_file = Path.joinpath(config_path, 'config.yaml')
-logging_config_file = Path.joinpath(config_path, 'logging.yaml')
-logs = Path.joinpath(writable_root, 'log')
-use_archived_resources = not Path.joinpath(root, 'resources').is_dir()
+screenshot_path = Path.joinpath(writable_root, "screenshot")
+config_path = Path.joinpath(writable_root, "config")
+cache_path = Path.joinpath(writable_root, "cache")
+extra_items_path = Path.joinpath(writable_root, "extra_items")
+config_file = Path.joinpath(config_path, "config.yaml")
+logging_config_file = Path.joinpath(config_path, "logging.yaml")
+logs = Path.joinpath(writable_root, "log")
+use_archived_resources = not Path.joinpath(root, "resources").is_dir()
 if use_archived_resources:
     resource_archive = app_archive
-    resource_root = Path.joinpath(resource_archive, 'resources')
+    resource_root = Path.joinpath(resource_archive, "resources")
 else:
     resource_archive = None
-    resource_root = Path.joinpath(root, 'resources')
-vendor_root = Path.joinpath(root, 'vendor')
-tessdata_prefix = Path.joinpath(vendor_root, 'tessdata')
+    resource_root = Path.joinpath(root, "resources")
+vendor_root = Path.joinpath(root, "vendor")
+tessdata_prefix = Path.joinpath(vendor_root, "tessdata")
 
 
 ##### end of paths
@@ -80,6 +82,7 @@ tessdata_prefix = Path.joinpath(vendor_root, 'tessdata')
 dirty = False
 _config_store = None
 config = schema.root()
+
 
 class RootConfigStore(YamlConfigStore):
     def __init__(self):
@@ -90,24 +93,29 @@ class RootConfigStore(YamlConfigStore):
             self.schema = schema.root()
             self.root = self.schema._mapping
             self.save()
-        with open(self.filename, 'r', encoding='utf-8') as f:
+        with open(self.filename, "r", encoding="utf-8") as f:
             self.root = yaml.load(f)
-        config_schema_version = self.root.get('__version__', None)
+        config_schema_version = self.root.get("__version__", None)
         if config_schema_version != schema.root.__version__:
             if config_schema_version is None:
-                oldfile_suffix = '-legacy.bak'
+                oldfile_suffix = "-legacy.bak"
             else:
-                oldfile_suffix = f'-schema{config_schema_version}.bak'
-            shutil.copyfile(self.filename, str(self.filename).removesuffix('.yaml') + oldfile_suffix)
+                oldfile_suffix = f"-schema{config_schema_version}.bak"
+            shutil.copyfile(
+                self.filename, str(self.filename).removesuffix(".yaml") + oldfile_suffix
+            )
             from .migration import migrate
+
             self.root = migrate(self.root)
             self.save()
         self.schema = schema.root(self.root)
-    
+
     def _default_root(self):
         return super()._default_root()
 
+
 initialized = False
+
 
 def init(extra_logging_handlers=None):
     global _config_store, config, initialized
@@ -123,18 +131,22 @@ def init(extra_logging_handlers=None):
     enable_logging(extra_logging_handlers)
     initialized = True
 
+
 def _get_instance_id_win32():
     import ctypes
-    k32 = ctypes.WinDLL('kernel32', use_last_error=True)
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
     CreateMutex = k32.CreateMutexW
     CloseHandle = k32.CloseHandle
     ERROR_ALREADY_EXISTS = 183
     from zlib import crc32
+
     path_hash = crc32(os.path.realpath(config_file).encode())
     i = 0
     while True:
-        name = 'Global\\ArknightsAutoHelper.%08X.%d' % (path_hash, i)
+        name = "Global\\ArknightsAutoHelper.%08X.%d" % (path_hash, i)
         import ctypes
+
         mutex = ctypes.c_void_p(CreateMutex(None, True, name))
         err = ctypes.get_last_error()
 
@@ -147,6 +159,7 @@ def _get_instance_id_win32():
             continue  # try next index
 
         import atexit
+
         atexit.register(lambda: CloseHandle(mutex))
 
         return i
@@ -157,17 +170,20 @@ def _get_instance_id_posix():
     while True:
         try:
             if i == 0:
-                filename = Path.joinpath(logs, 'ArknightsAutoHelper.log')
+                filename = Path.joinpath(logs, "ArknightsAutoHelper.log")
             else:
-                filename = Path.joinpath(logs, 'ArknightsAutoHelper.%d.log' % i)
-            f = open(filename, 'a+b')
+                filename = Path.joinpath(logs, "ArknightsAutoHelper.%d.log" % i)
+            f = open(filename, "a+b")
             f.seek(0)
             import fcntl
+
             fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             import atexit
+
             def fini(lockfile):
                 if lockfile is not None:
                     lockfile.close()
+
             atexit.register(fini, f)
             return i
         except FileNotFoundError:
@@ -177,7 +193,7 @@ def _get_instance_id_posix():
 
 
 def _get_instance_id():
-    if os.name == 'nt':
+    if os.name == "nt":
         return _get_instance_id_win32()
     else:
         return _get_instance_id_posix()
@@ -196,7 +212,7 @@ def save():
 
 def _dig_mapping(dig, create_parent=False):
     if isinstance(dig, str):
-        dig = dig.split('/')
+        dig = dig.split("/")
     parent_maps = dig[:-1]
     current_map = config._mapping
     i = 0
@@ -208,7 +224,7 @@ def _dig_mapping(dig, create_parent=False):
             _set_dirty()
         current_map = current_map[k]
         if not isinstance(current_map, Mapping):
-            raise TypeError('config key %s is not a mapping' % '/'.join(dig[:i + 1]))
+            raise TypeError("config key %s is not a mapping" % "/".join(dig[: i + 1]))
         i += 1
     k = dig[-1]
     return current_map, k
@@ -243,6 +259,7 @@ def set(dig, value):
 _instanceid = None
 logfile = None
 
+
 def get_instance_id():
     global _instanceid, logfile
     if _instanceid is not None:
@@ -250,14 +267,15 @@ def get_instance_id():
 
     _instanceid = _get_instance_id()
     if _instanceid == 0:
-        logfile = Path.joinpath(logs, 'ArknightsAutoHelper.log')
+        logfile = Path.joinpath(logs, "ArknightsAutoHelper.log")
     else:
-        logfile = Path.joinpath(logs, 'ArknightsAutoHelper.%d.log' % _instanceid)
-
+        logfile = Path.joinpath(logs, "ArknightsAutoHelper.%d.log" % _instanceid)
 
     return _instanceid
 
+
 logging_enabled = False
+
 
 def enable_logging(extra_handlers: Optional[Sequence[logging.Handler]] = None):
     global logging_enabled
@@ -266,12 +284,15 @@ def enable_logging(extra_handlers: Optional[Sequence[logging.Handler]] = None):
     get_instance_id()
     old_handlers: list = logging.root.handlers[:]
     if logging_config_file.exists():
-        logging_config_io = open(logging_config_file, 'r', encoding='utf-8')
+        logging_config_io = open(logging_config_file, "r", encoding="utf-8")
     else:
         import zipfile
         import io
+
         with zipfile.ZipFile(app_archive) as zf:
-            logging_config_io = io.TextIOWrapper(zf.open('config/logging.yaml', 'r'), encoding='utf-8')
+            logging_config_io = io.TextIOWrapper(
+                zf.open("config/logging.yaml", "r"), encoding="utf-8"
+            )
     with logging_config_io:
         logging.config.dictConfig(yaml.load(logging_config_io))
     if extra_handlers is not None:
@@ -281,24 +302,28 @@ def enable_logging(extra_handlers: Optional[Sequence[logging.Handler]] = None):
     early_records = util.early_logs.fetch_and_stop()
     for record in early_records:
         logging.getLogger(record.name).handle(record)
-    logging.debug('ArknightsAutoHelper version %s', version)
+    logging.debug("ArknightsAutoHelper version %s", version)
     import coloredlogs
+
     coloredlogs.install(
-        fmt=' Ξ %(message)s',
-        #fmt=' %(asctime)s ! %(funcName)s @ %(filename)s:%(lineno)d ! %(levelname)s # %(message)s',
-        datefmt='%H:%M:%S',
-        level_styles={'warning': {'color': 'yellow'}, 'error': {'color': 'red'}},
-        level='INFO')
+        fmt=" Ξ %(message)s",
+        # fmt=' %(asctime)s ! %(funcName)s @ %(filename)s:%(lineno)d ! %(levelname)s # %(message)s',
+        datefmt="%H:%M:%S",
+        level_styles={"warning": {"color": "yellow"}, "error": {"color": "red"}},
+        level="INFO",
+    )
     logging_enabled = True
+
 
 def get_vendor_path(name):
     import platform
+
     base = Path.joinpath(vendor_root, name)
     system = platform.system().lower()
     arch = platform.machine().lower()
     if system:
-        if arch :
-            path = Path.joinpath(base, f'{system}_{arch}')
+        if arch:
+            path = Path.joinpath(base, f"{system}_{arch}")
             if path.is_dir():
                 return path
         path = Path.joinpath(base, system)
@@ -307,6 +332,7 @@ def get_vendor_path(name):
     if base.is_dir():
         return base
     raise FileNotFoundError(base)
+
 
 class _FixedSpecFinder:
     def __init__(self, name, spec):
@@ -319,10 +345,12 @@ class _FixedSpecFinder:
         return None
 
     def __repr__(self):
-        return f'{self.__class__.__qualname__}({self.name!r}, {self.spec!r})'
+        return f"{self.__class__.__qualname__}({self.name!r}, {self.spec!r})"
+
 
 def require_vendor_lib(fullname, base_path_relative_to_vendor):
     import importlib.machinery
+
     if bundled:
         importlib.import_module(fullname)
         return
@@ -331,7 +359,9 @@ def require_vendor_lib(fullname, base_path_relative_to_vendor):
     path = Path.joinpath(vendor_root, base_path_relative_to_vendor)
     if not path.exists():
         raise FileNotFoundError(path)
-    spec = importlib.machinery.PathFinder.find_spec(fullname, [os.fspath(path)] + sys.path)
+    spec = importlib.machinery.PathFinder.find_spec(
+        fullname, [os.fspath(path)] + sys.path
+    )
     if spec is None:
         raise ModuleNotFoundError(fullname)
     sys.meta_path.insert(0, _FixedSpecFinder(fullname, spec))

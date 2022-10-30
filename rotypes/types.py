@@ -28,36 +28,52 @@ def check_hresult(hr):
 
 
 class GUID(Structure):
-    _fields_ = [("Data1", DWORD),
-                ("Data2", WORD),
-                ("Data3", WORD),
-                ("Data4", c_uint8 * 8)]
+    _fields_ = [
+        ("Data1", DWORD),
+        ("Data2", WORD),
+        ("Data3", WORD),
+        ("Data4", c_uint8 * 8),
+    ]
 
     def __init__(self, *initwith):
         if len(initwith) == 1 and isinstance(initwith[0], str):
             strrepr = initwith[0]
-            if strrepr.startswith('{'):
+            if strrepr.startswith("{"):
                 strrepr = strrepr[1:-1]
-            part1, part2, part3, part4, part5 = strrepr.split('-', 5)
+            part1, part2, part3, part4, part5 = strrepr.split("-", 5)
             self.Data1 = int(part1, 16)
             self.Data2 = int(part2, 16)
             self.Data3 = int(part3, 16)
-            self.Data4 = (int(part4[0:2], 16), int(part4[2:4], 16),
-                          int(part5[0:2], 16), int(part5[2:4], 16), int(part5[4:6], 16), int(part5[6:8], 16),
-                          int(part5[8:10], 16), int(part5[10:12], 16))
+            self.Data4 = (
+                int(part4[0:2], 16),
+                int(part4[2:4], 16),
+                int(part5[0:2], 16),
+                int(part5[2:4], 16),
+                int(part5[4:6], 16),
+                int(part5[6:8], 16),
+                int(part5[8:10], 16),
+                int(part5[10:12], 16),
+            )
         elif len(initwith) == 4:
             self.Data1, self.Data2, self.Data3, self.Data4 = initwith
         elif len(initwith) == 11:
-            self.Data1, self.Data2, self.Data3, self.Data4 = (*initwith[0:3], initwith[3:])
+            self.Data1, self.Data2, self.Data3, self.Data4 = (
+                *initwith[0:3],
+                initwith[3:],
+            )
         else:
             raise ArgumentError(len(initwith))
 
     def __str__(self):
-        return '%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x' % (
-        self.Data1, self.Data2, self.Data3, *list(self.Data4))
+        return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
+            self.Data1,
+            self.Data2,
+            self.Data3,
+            *list(self.Data4),
+        )
 
     def __repr__(self):
-        return 'GUID(%s)' % repr(str(self))
+        return "GUID(%s)" % repr(str(self))
 
     def __eq__(self, other):
         return isinstance(other, GUID) and bytes(self) == bytes(other)
@@ -67,8 +83,9 @@ class GUID(Structure):
         return hash(bytes(self))
 
     def __call__(self, victim):
-        '''for use as class decorator'''
+        """for use as class decorator"""
         victim.GUID = self
         return victim
+
 
 REFGUID = POINTER(GUID)

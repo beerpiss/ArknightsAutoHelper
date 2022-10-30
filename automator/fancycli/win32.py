@@ -29,14 +29,15 @@ GetFileType = k32.GetFileType
 FILE_TYPE_CHAR = 0x0002
 RtlGetVersion = ctypes.windll.ntdll.RtlGetVersion
 
+
 class OSVERSIONINFOW(ctypes.Structure):
     _fields_ = [
-        ('dwOSVersionInfoSize', ctypes.c_ulong),
-        ('dwMajorVersion', ctypes.c_ulong),
-        ('dwMinorVersion', ctypes.c_ulong),
-        ('dwBuildNumber', ctypes.c_ulong),
-        ('dwPlatformId', ctypes.c_ulong),
-        ('szCSDVersion', ctypes.c_wchar * 128),
+        ("dwOSVersionInfoSize", ctypes.c_ulong),
+        ("dwMajorVersion", ctypes.c_ulong),
+        ("dwMinorVersion", ctypes.c_ulong),
+        ("dwBuildNumber", ctypes.c_ulong),
+        ("dwPlatformId", ctypes.c_ulong),
+        ("szCSDVersion", ctypes.c_wchar * 128),
     ]
 
 
@@ -45,6 +46,7 @@ def _build_number():
     info = OSVERSIONINFOW(dwOSVersionInfoSize=ctypes.sizeof(OSVERSIONINFOW))
     RtlGetVersion(ctypes.byref(info))
     return info.dwBuildNumber
+
 
 def getch_timeout(timeout):
     hstdin = GetStdHandle(STD_INPUT_HANDLE)
@@ -57,7 +59,7 @@ def getch_timeout(timeout):
         elif res == WAIT_OBJECT_0:
             if msvcrt.kbhit():
                 ch = msvcrt.getch()
-                if ch == b'\x00' or ch == b'\xe0':
+                if ch == b"\x00" or ch == b"\xe0":
                     ch = msvcrt.getch()
                 return ch
             else:
@@ -75,10 +77,11 @@ def getch_timeout(timeout):
 # therefore we can't implement getch() in cygwin pty from a win32 process
 # however msvcrt isatty says true for cygwin pty pipes so we need to examine the pipe names
 
+
 def is_cygwin_pty(io):
-    if hasattr(io, 'raw'):
+    if hasattr(io, "raw"):
         io = io.raw
-    if not hasattr(io, 'fileno'):
+    if not hasattr(io, "fileno"):
         return False
     fd = io.fileno()
     try:
@@ -87,15 +90,15 @@ def is_cygwin_pty(io):
         return False
     buf = ctypes.create_string_buffer(65540)
     if GetFileInformationByHandleEx(handle, FileNameInfo, buf, 65540):
-        length = struct.unpack_from('I', buf, 0)[0]
-        s = buf[4:4 + length].decode('utf-16-le')
-        return 'cygwin-' in s and '-pty' in s
+        length = struct.unpack_from("I", buf, 0)[0]
+        s = buf[4 : 4 + length].decode("utf-16-le")
+        return "cygwin-" in s and "-pty" in s
     return False
 
 
 def isatty(io):
     # MSVC isatty returns nonzero for cygwin/msys2 pty named pipes, but we can't use WaitForMultipleObjects on pipes
-    if not hasattr(io, 'fileno'):
+    if not hasattr(io, "fileno"):
         return False
     try:
         handle = msvcrt.get_osfhandle(io.fileno())
@@ -115,10 +118,12 @@ def check_control_code():
     outmode = ctypes.c_uint32()
     try:
         if _build_number() >= 14393:
-            logger.debug('using Windows ENABLE_VIRTUAL_TERMINAL_PROCESSING')
+            logger.debug("using Windows ENABLE_VIRTUAL_TERMINAL_PROCESSING")
             if not GetConsoleMode(hout, ctypes.byref(outmode)):
                 return False
-            if not SetConsoleMode(hout, outmode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING):
+            if not SetConsoleMode(
+                hout, outmode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            ):
                 return False
             GetConsoleMode(hout, ctypes.byref(outmode))
             SetConsoleMode(hout, outmode.value | DISABLE_NEWLINE_AUTO_RETURN)
@@ -137,17 +142,22 @@ def check_control_code():
             if not GetConsoleMode(hout, ctypes.byref(outmode)):
                 return False
             # check for ansicon/ConEmu hook dlls
-            hooked = bool(GetModuleHandle('ansi32.dll') or GetModuleHandle('ansi64.dll') or GetModuleHandle(
-                'conemuhk64.dll') or GetModuleHandle('conemuhk.dll'))
+            hooked = bool(
+                GetModuleHandle("ansi32.dll")
+                or GetModuleHandle("ansi64.dll")
+                or GetModuleHandle("conemuhk64.dll")
+                or GetModuleHandle("conemuhk.dll")
+            )
             if hooked:
-                logger.debug('using ansicon/conemu hook')
+                logger.debug("using ansicon/conemu hook")
             else:
-                logger.debug('using colorama as fallback')
+                logger.debug("using colorama as fallback")
                 import colorama
+
                 colorama.init()  # for basic color output
             return hooked
     finally:
         logger.setLevel(logging.ERROR)
 
 
-__all__ = ['getch_timeout', 'isatty', 'check_control_code']
+__all__ = ["getch_timeout", "isatty", "check_control_code"]

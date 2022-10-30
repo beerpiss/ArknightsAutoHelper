@@ -4,7 +4,8 @@ from functools import lru_cache
 from io import BytesIO
 
 import cv2
-#from aip import AipOcr
+
+# from aip import AipOcr
 import requests
 from app import config
 from .common import *
@@ -22,35 +23,47 @@ def check_supported():
 
 def _options(option):
     options = {}
-    subtags = option.lower().split('-')
-    if subtags[0] == 'en':
+    subtags = option.lower().split("-")
+    if subtags[0] == "en":
         options["language_type"] = "ENG"
-    elif subtags[0] == 'zh':
+    elif subtags[0] == "zh":
         options["language_type"] = "CHN_ENG"
     return options
 
+
 @lru_cache()
 def _get_token():
-    resp = requests.request('POST', 'https://aip.baidubce.com/oauth/2.0/token',
-                     params={'grant_type': 'client_credentials', 'client_id': config.ocr.baidu_api.app_key, 'client_secret': config.ocr.baidu_api.app_secret})
+    resp = requests.request(
+        "POST",
+        "https://aip.baidubce.com/oauth/2.0/token",
+        params={
+            "grant_type": "client_credentials",
+            "client_id": config.ocr.baidu_api.app_key,
+            "client_secret": config.ocr.baidu_api.app_secret,
+        },
+    )
     resp.raise_for_status()
     resp = resp.json()
-    return resp['access_token']
+    return resp["access_token"]
 
 
 def _basicGeneral(image, options):
     data = {}
-    data['image'] = base64.b64encode(image).decode()
+    data["image"] = base64.b64encode(image).decode()
     data.update(options)
     while True:
-        resp = requests.post('https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic', data=data, params={'access_token': _get_token()})
+        resp = requests.post(
+            "https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic",
+            data=data,
+            params={"access_token": _get_token()},
+        )
         resp.raise_for_status()
         resp = resp.json()
-        if 'error_code' in resp:
-            if resp['error_code'] == 18:
+        if "error_code" in resp:
+            if resp["error_code"] == 18:
                 time.sleep(1)
                 continue
-            raise RuntimeError('%d: %s' % (resp['error_code'], resp['error_msg']))
+            raise RuntimeError("%d: %s" % (resp["error_code"], resp["error_msg"]))
         break
     return resp
 
@@ -66,12 +79,17 @@ class BaiduOCR(OcrEngine):
         #     # TODO
         #     line = 1
         imgbytesio = BytesIO()
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        image.save(imgbytesio, format='JPEG', imwrite_params=(cv2.IMWRITE_JPEG_QUALITY, 95))
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        image.save(
+            imgbytesio, format="JPEG", imwrite_params=(cv2.IMWRITE_JPEG_QUALITY, 95)
+        )
         result = _basicGeneral(imgbytesio.getvalue(), _options(self.lang))
-        line = OcrLine([OcrWord(Rect(0, 0), x['words']) for x in result['words_result']])
+        line = OcrLine(
+            [OcrWord(Rect(0, 0), x["words"]) for x in result["words_result"]]
+        )
         result = OcrResult([line])
         return result
+
 
 Engine = BaiduOCR

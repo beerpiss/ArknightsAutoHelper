@@ -7,13 +7,26 @@ if TYPE_CHECKING:
     from typing import Annotated, Literal, Optional, Sequence, Union
     from numbers import Real
     import imgreco.common
-    TupleRect = tuple[Annotated[Real, 'left'], Annotated[Real, 'top'], Annotated[Real, 'right'], Annotated[Real, 'bottom']]
+
+    TupleRect = tuple[
+        Annotated[Real, "left"],
+        Annotated[Real, "top"],
+        Annotated[Real, "right"],
+        Annotated[Real, "bottom"],
+    ]
     RoiDef = Union[str, imgreco.common.RegionOfInterest]
     from .helper import BaseAutomator
 
+
 class RoiMatchingArgs(TypedDict):
-    method: Union[Literal['template_matching'], Literal['compare_mse'], Literal['feature_matching'], None]
+    method: Union[
+        Literal["template_matching"],
+        Literal["compare_mse"],
+        Literal["feature_matching"],
+        None,
+    ]
     fixed_position: bool
+
 
 import logging
 from random import uniform, randint, gauss
@@ -31,12 +44,13 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
         helper: BaseAutomator
         logger: logging.Logger
         viewport: tuple[int, int]
-    
+
     def _implicit_screenshot(self) -> Image:
         return self.helper.control.screenshot(False)
 
-    def delay(self, n: Real=10,  # 等待时间中值
-               randomize=True, allow_skip=False):  # 是否在此基础上设偏移量
+    def delay(
+        self, n: Real = 10, randomize=True, allow_skip=False  # 等待时间中值
+    ):  # 是否在此基础上设偏移量
         if randomize:
             m = uniform(0, 0.3)
             n = uniform(n - m * 0.5 * n, n + m * n)
@@ -53,7 +67,7 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
     def tap_rect(self, rc: Union[TupleRect, Rect], post_delay=1):
         if isinstance(rc, Rect):
             rc = rc.ltrb
-        self.logger.debug('tap_rect %r', rc)
+        self.logger.debug("tap_rect %r", rc)
         hwidth = (rc[2] - rc[0]) / 2
         hheight = (rc[3] - rc[1]) / 2
         midx = rc[0] + hwidth
@@ -77,7 +91,15 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
         self.helper.control.touch_tap(tuple(int(x) for x in finalpt), (0, 0))
         self.delay(post_delay, randomize=True)
 
-    def wait_for_still_image(self, threshold=16, crop=None, timeout=60, raise_for_timeout=True, check_delay=1, iteration=1):
+    def wait_for_still_image(
+        self,
+        threshold=16,
+        crop=None,
+        timeout=60,
+        raise_for_timeout=True,
+        check_delay=1,
+        iteration=1,
+    ):
         if crop is None:
             shooter = lambda: self.helper.control.screenshot(False)
         else:
@@ -102,18 +124,25 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
             prev_screenshot = screenshot2
             if mse < minerr:
                 minerr = mse
-            if not message_shown and t1-t0 > 10:
+            if not message_shown and t1 - t0 > 10:
                 self.logger.info("Waiting for the screen to be static")
         if raise_for_timeout:
-            raise RuntimeError("Timed out waiting for the screen to be static: %d seconds, minimum error=%d, threshold=%d" % (timeout, minerr, threshold))
+            raise RuntimeError(
+                "Timed out waiting for the screen to be static: %d seconds, minimum error=%d, threshold=%d"
+                % (timeout, minerr, threshold)
+            )
         return None
 
     def swipe_screen(self, move, rand=100, origin_x=None, origin_y=None):
         origin_x = (origin_x or self.viewport[0] // 2) + randint(-rand, rand)
         origin_y = (origin_y or self.viewport[1] // 2) + randint(-rand, rand)
-        self.helper.control.touch_swipe2((origin_x, origin_y), (move, max(250, move // 2)), randint(600, 900))
+        self.helper.control.touch_swipe2(
+            (origin_x, origin_y), (move, max(250, move // 2)), randint(600, 900)
+        )
 
-    def wait_for_roi(self, roi: RoiDef, timeout: Real = 10, **roi_matching_args: RoiMatchingArgs) -> imgreco.common.RoiMatchingResult:
+    def wait_for_roi(
+        self, roi: RoiDef, timeout: Real = 10, **roi_matching_args: RoiMatchingArgs
+    ) -> imgreco.common.RoiMatchingResult:
         t0 = time.monotonic()
         result = imgreco.common.RoiMatchingResult.NoMatch
         while time.monotonic() < t0 + timeout:
@@ -122,44 +151,61 @@ class AddonMixin(imgreco.common.RoiMatchingMixin):
                 break
             self.delay(0.5, False, False)
         return result
-    
-    def wait_and_tap_roi(self, roi: RoiDef, timeout: Real = 10, **roi_matching_args: RoiMatchingArgs) -> imgreco.common.RoiMatchingResult:
+
+    def wait_and_tap_roi(
+        self, roi: RoiDef, timeout: Real = 10, **roi_matching_args: RoiMatchingArgs
+    ) -> imgreco.common.RoiMatchingResult:
         result = self.wait_for_roi(roi, timeout, **roi_matching_args)
         if result:
             self.tap_rect(roi.bbox.ltrb)
         return result
-    
-    def wait_for_any_roi(self, rois: Sequence[RoiDef], timeout: Real = 10, **roi_matching_args: RoiMatchingArgs) -> tuple[bool, dict[str, imgreco.common.RoiMatchingResult]]:
+
+    def wait_for_any_roi(
+        self,
+        rois: Sequence[RoiDef],
+        timeout: Real = 10,
+        **roi_matching_args: RoiMatchingArgs,
+    ) -> tuple[bool, dict[str, imgreco.common.RoiMatchingResult]]:
         rois = [self._ensure_roi(roi) for roi in rois]
         t0 = time.monotonic()
         results = {roi.name: imgreco.common.RoiMatchingResult.NoMatch for roi in rois}
         while time.monotonic() < t0 + timeout:
-            results = {roi.name: self.match_roi(roi, **roi_matching_args) for roi in rois}
+            results = {
+                roi.name: self.match_roi(roi, **roi_matching_args) for roi in rois
+            }
             if any(results.values()):
                 return True, results
             self.delay(0.5, False, False)
         return False, results
-    
-    def wait_for_all_roi(self, rois: Sequence[RoiDef], timeout: Real = 10, **roi_matching_args: RoiMatchingArgs) -> tuple[bool, dict[str, imgreco.common.RoiMatchingResult]]:
+
+    def wait_for_all_roi(
+        self,
+        rois: Sequence[RoiDef],
+        timeout: Real = 10,
+        **roi_matching_args: RoiMatchingArgs,
+    ) -> tuple[bool, dict[str, imgreco.common.RoiMatchingResult]]:
         rois = [self._ensure_roi(roi) for roi in rois]
         t0 = time.monotonic()
         results = {roi.name: imgreco.common.RoiMatchingResult.NoMatch for roi in rois}
         while time.monotonic() < t0 + timeout:
-            results = {roi.name: self.match_roi(roi, **roi_matching_args) for roi in rois}
+            results = {
+                roi.name: self.match_roi(roi, **roi_matching_args) for roi in rois
+            }
             if all(results.values()):
                 return True, results
             self.delay(0.5, False, False)
         return False, results
 
-    def screenshot(self, mode='BGR', cached=None) -> Image:
+    def screenshot(self, mode="BGR", cached=None) -> Image:
         raw_screen = self.helper.control.screenshot(cached=cached).convert(mode)
         if not app.config.device.wait_for_slow_network:
             return raw_screen
         vw, vh = self.helper.vw, self.helper.vh
-        roi_rect = (58.984*vw, 89.167*vh, 68.281*vw, 95.556*vh)
+        roi_rect = (58.984 * vw, 89.167 * vh, 68.281 * vw, 95.556 * vh)
         roi = raw_screen.crop(roi_rect)
         from imgreco.ocr.ppocr import ocr_for_single_line
-        while '提交反馈' in ocr_for_single_line(roi.array):
+
+        while "提交反馈" in ocr_for_single_line(roi.array):
             self.delay(0.5, False)
             raw_screen = self.helper.control.screenshot(cached=False).convert(mode)
             roi = raw_screen.crop(roi_rect)

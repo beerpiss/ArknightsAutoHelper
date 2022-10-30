@@ -11,12 +11,16 @@ _typeof_Release = WINFUNCTYPE(ULONG, c_void_p)
 
 
 class _impl_delegate_vtbl(Structure):
-    _fields_ = [('QueryInterface', _typeof_QueryInterface), ('AddRef', _typeof_AddRef), ('Release', _typeof_Release),
-                ('Invoke', c_void_p)]
+    _fields_ = [
+        ("QueryInterface", _typeof_QueryInterface),
+        ("AddRef", _typeof_AddRef),
+        ("Release", _typeof_Release),
+        ("Invoke", c_void_p),
+    ]
 
 
 class _impl_delegate(Structure):
-    _fields_ = [('vtbl', POINTER(_impl_delegate_vtbl))]
+    _fields_ = [("vtbl", POINTER(_impl_delegate_vtbl))]
 
 
 def proto(*argtypes, retval=None):
@@ -26,7 +30,10 @@ def proto(*argtypes, retval=None):
     proto._retval = retval
     return proto
 
-IID_IAgileObject = GUID('94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90')
+
+IID_IAgileObject = GUID("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90")
+
+
 class delegatebase:
     @classmethod
     def delegate(cls, func):
@@ -41,7 +48,11 @@ class delegatebase:
         def impl_QueryInterface(this, refiid, ppunk):
             try:
                 wantiid = refiid.contents
-                if wantiid == IUnknown.GUID or wantiid == IID_IAgileObject or wantiid == iid:
+                if (
+                    wantiid == IUnknown.GUID
+                    or wantiid == IID_IAgileObject
+                    or wantiid == iid
+                ):
                     impl_AddRef(this)
                     ppunk[0] = this
                     return S_OK
@@ -59,6 +70,7 @@ class delegatebase:
 
         proto = cls._funcproto
         if proto._retval is not None:
+
             def impl_Invoke(this, *args):
                 try:
                     for arg in args:
@@ -70,7 +82,9 @@ class delegatebase:
                 except Exception:
                     traceback.print_exc()
                     return E_FAIL
+
         else:
+
             def impl_Invoke(this, *args, **kwargs):
                 if isinstance(this, IUnknown):
                     this._AddRef()

@@ -1,14 +1,18 @@
 from .types import ControllerTarget
 
+
 def enum_targets() -> list[ControllerTarget]:
     from .adb.targets import enum_targets
+
     return enum_targets()
+
 
 def _is_valid_ip_port(ip_port: str):
     import ipaddress
     import re
+
     try:
-        match = re.match(r'^(\d+\.\d+\.\d+\.\d+):(\d+)$', ip_port)
+        match = re.match(r"^(\d+\.\d+\.\d+\.\d+):(\d+)$", ip_port)
         if match:
             ip = ipaddress.ip_address(match.group(1))
             port = int(match.group(2))
@@ -16,7 +20,10 @@ def _is_valid_ip_port(ip_port: str):
     except:
         return False
 
-def get_auto_connect_candidates(targets: list[ControllerTarget] = ..., preference: str = None) -> list[ControllerTarget]:
+
+def get_auto_connect_candidates(
+    targets: list[ControllerTarget] = ..., preference: str = None
+) -> list[ControllerTarget]:
     """
     Returns target with highest auto_connect_priority.
 
@@ -28,6 +35,7 @@ def get_auto_connect_candidates(targets: list[ControllerTarget] = ..., preferenc
         return []
     if preference is not None:
         from .adb.target import ADBControllerTarget
+
         # preference can be:
         #   - target identifier (hyperv:bstk:Nougat64_nxt)
         #   - adb serial (emulator-5554)
@@ -42,19 +50,23 @@ def get_auto_connect_candidates(targets: list[ControllerTarget] = ..., preferenc
                     return [target]
         if _is_valid_ip_port(preference):
             from .adb.targets import get_target_from_adb_serial
+
             return [get_target_from_adb_serial(preference, [])]
-        raise IndexError(f'preference {preference} not found')
+        raise IndexError(f"preference {preference} not found")
     max_priority = max(x.auto_connect_priority for x in targets)
     max_tier_targets = [x for x in targets if x.auto_connect_priority == max_priority]
     if max_priority > 0:
         if len(max_tier_targets) == 1:
             return [max_tier_targets[0]]
         elif len(max_tier_targets) > 1:
-            raise IndexError(f'Multiple targets enumerated with auto connect priority {max_priority}')
+            raise IndexError(
+                f"Multiple targets enumerated with auto connect priority {max_priority}"
+            )
         else:
             return []
     else:
         return max_tier_targets
+
 
 def auto_connect(targets: list[ControllerTarget] = ..., preference: str = None):
     selected_targets = get_auto_connect_candidates(targets)
@@ -62,27 +74,32 @@ def auto_connect(targets: list[ControllerTarget] = ..., preference: str = None):
         raise IndexError("no target enumerated")
     if len(selected_targets) == 1:
         return selected_targets[0].create_controller()
-    
+
     import logging
+
     logger = logging.getLogger(__name__)
     for target in selected_targets:
         try:
-            logger.info('trying target %s', target)
+            logger.info("trying target %s", target)
             control = target.create_controller()
             return control
         except:
             pass
-    raise IndexError('No target enumerated')
+    raise IndexError("No target enumerated")
+
 
 def _test():
     import logging
+
     logging.basicConfig(level=logging.DEBUG, force=True)
     import app
+
     app.init()
     targets = enum_targets()
-    print('====== enunmerated targets ======')
+    print("====== enunmerated targets ======")
     for target in targets:
         print(target)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     _test()

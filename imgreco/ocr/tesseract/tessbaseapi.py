@@ -7,24 +7,26 @@ import platform
 
 import numpy as np
 
+
 def resolve_libpath():
-    if sys.platform == 'win32' and 'app' in sys.modules:
+    if sys.platform == "win32" and "app" in sys.modules:
         try:
             import app
-            vendor_path = str(app.get_vendor_path('tesseract'))
-            if vendor_path not in os.environ['PATH']:
-                os.environ['PATH'] += os.pathsep + vendor_path
+
+            vendor_path = str(app.get_vendor_path("tesseract"))
+            if vendor_path not in os.environ["PATH"]:
+                os.environ["PATH"] += os.pathsep + vendor_path
         except:
             pass
     names = [
         # common library name for UNIX-like systems
-        'tesseract',
+        "tesseract",
         # MSVC library
-        'tesseract41.dll',
-        'tesseract50.dll',
+        "tesseract41.dll",
+        "tesseract50.dll",
         # MinGW library
-        'libtesseract-4.dll',
-        'libtesseract-5.dll'
+        "libtesseract-4.dll",
+        "libtesseract-5.dll",
     ]
     for name in names:
         lib = ctypes.util.find_library(name)
@@ -34,10 +36,10 @@ def resolve_libpath():
 
 
 def get_default_datapath():
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         libpath = resolve_libpath()
         if libpath:
-            return os.path.dirname(libpath).joinpath('tessdata')
+            return os.path.dirname(libpath).joinpath("tessdata")
     return None
 
 
@@ -51,27 +53,97 @@ def cfunc(lib, name, restype, *argtypes):
 libname = resolve_libpath()
 if libname:
     tesseract = ctypes.cdll.LoadLibrary(libname)
-    TessVersion = cfunc(tesseract, 'TessVersion', ctypes.c_char_p)
-    TessBaseAPICreate = cfunc(tesseract, 'TessBaseAPICreate', ctypes.c_void_p)
-    TessBaseAPIInit4 = cfunc(tesseract, 'TessBaseAPIInit4', ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int)
-    TessBaseAPISetImage = cfunc(tesseract, 'TessBaseAPISetImage', None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)
-    TessBaseAPIRecognize = cfunc(tesseract, 'TessBaseAPIRecognize', ctypes.c_void_p, ctypes.c_void_p)
-    TessBaseAPIGetHOCRText = cfunc(tesseract, 'TessBaseAPIGetHOCRText', ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
-    TessDeleteText = cfunc(tesseract, 'TessDeleteText', None, ctypes.c_void_p)
-    TessBaseAPIEnd = cfunc(tesseract, 'TessBaseAPIEnd', None, ctypes.c_void_p)
-    TessBaseAPIClear = cfunc(tesseract, 'TessBaseAPIClear', None, ctypes.c_void_p)
-    TessBaseAPIDelete = cfunc(tesseract, 'TessBaseAPIDelete', None, ctypes.c_void_p)
-    TessBaseAPISetSourceResolution = cfunc(tesseract, 'TessBaseAPISetSourceResolution', None, ctypes.c_void_p, ctypes.c_int)
-    TessBaseAPISetVariable = cfunc(tesseract, 'TessBaseAPISetVariable', ctypes.c_bool, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p)
-    TessBaseAPIGetIntVariable = cfunc(tesseract, 'TessBaseAPIGetIntVariable', ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int))
-    TessBaseAPIGetBoolVariable = cfunc(tesseract, 'TessBaseAPIGetBoolVariable', ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int))
-    TessBaseAPIGetDoubleVariable = cfunc(tesseract, 'TessBaseAPIGetDoubleVariable', ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
-    TessBaseAPIGetStringVariable = cfunc(tesseract, 'TessBaseAPIGetStringVariable', ctypes.c_char_p, ctypes.c_void_p, ctypes.c_char_p)
+    TessVersion = cfunc(tesseract, "TessVersion", ctypes.c_char_p)
+    TessBaseAPICreate = cfunc(tesseract, "TessBaseAPICreate", ctypes.c_void_p)
+    TessBaseAPIInit4 = cfunc(
+        tesseract,
+        "TessBaseAPIInit4",
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_int,
+    )
+    TessBaseAPISetImage = cfunc(
+        tesseract,
+        "TessBaseAPISetImage",
+        None,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+    )
+    TessBaseAPIRecognize = cfunc(
+        tesseract, "TessBaseAPIRecognize", ctypes.c_void_p, ctypes.c_void_p
+    )
+    TessBaseAPIGetHOCRText = cfunc(
+        tesseract,
+        "TessBaseAPIGetHOCRText",
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int,
+    )
+    TessDeleteText = cfunc(tesseract, "TessDeleteText", None, ctypes.c_void_p)
+    TessBaseAPIEnd = cfunc(tesseract, "TessBaseAPIEnd", None, ctypes.c_void_p)
+    TessBaseAPIClear = cfunc(tesseract, "TessBaseAPIClear", None, ctypes.c_void_p)
+    TessBaseAPIDelete = cfunc(tesseract, "TessBaseAPIDelete", None, ctypes.c_void_p)
+    TessBaseAPISetSourceResolution = cfunc(
+        tesseract, "TessBaseAPISetSourceResolution", None, ctypes.c_void_p, ctypes.c_int
+    )
+    TessBaseAPISetVariable = cfunc(
+        tesseract,
+        "TessBaseAPISetVariable",
+        ctypes.c_bool,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+    )
+    TessBaseAPIGetIntVariable = cfunc(
+        tesseract,
+        "TessBaseAPIGetIntVariable",
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int),
+    )
+    TessBaseAPIGetBoolVariable = cfunc(
+        tesseract,
+        "TessBaseAPIGetBoolVariable",
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int),
+    )
+    TessBaseAPIGetDoubleVariable = cfunc(
+        tesseract,
+        "TessBaseAPIGetDoubleVariable",
+        ctypes.c_int,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_double),
+    )
+    TessBaseAPIGetStringVariable = cfunc(
+        tesseract,
+        "TessBaseAPIGetStringVariable",
+        ctypes.c_char_p,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+    )
     version = TessVersion().decode()
     import logging
+
     logger = logging.getLogger(__name__)
-    logger.debug('using libtesseract C interface %s', version)
+    logger.debug("using libtesseract C interface %s", version)
     from util.unfuck_crtpath import encode_mbcs_path, crt_use_utf8, find_crt
+
     _crts = find_crt()
 else:
     raise ModuleNotFoundError()
@@ -85,20 +157,31 @@ class TessOcrEngineMode:
 
 
 class BaseAPI:
-    def __init__(self, datapath, language, oem=TessOcrEngineMode.OEM_DEFAULT, configs=None, vars=None, set_only_non_debug_params=False, win32_use_utf8=False):
+    def __init__(
+        self,
+        datapath,
+        language,
+        oem=TessOcrEngineMode.OEM_DEFAULT,
+        configs=None,
+        vars=None,
+        set_only_non_debug_params=False,
+        win32_use_utf8=False,
+    ):
         self._api_context_factory = lambda: contextlib.nullcontext()
         self.baseapi = None
         self.baseapi = ctypes.c_void_p(TessBaseAPICreate())
-        if sys.platform != 'win32' or win32_use_utf8:
-            self.fsencoding = 'utf-8'
+        if sys.platform != "win32" or win32_use_utf8:
+            self.fsencoding = "utf-8"
         else:  # win32
-            self.fsencoding = 'mbcs'
+            self.fsencoding = "mbcs"
         if win32_use_utf8:
             self._api_context_factory = lambda: crt_use_utf8(_crts)
         if datapath is None:
-            datapath = get_default_datapath()  # use installation path for windows instead of current executable (python.exe)
+            datapath = (
+                get_default_datapath()
+            )  # use installation path for windows instead of current executable (python.exe)
         if datapath is not None:  # still can be None here
-            if self.fsencoding == 'mbcs':
+            if self.fsencoding == "mbcs":
                 datapath = encode_mbcs_path(datapath)
             else:
                 datapath = str(datapath).encode(self.fsencoding)
@@ -122,9 +205,20 @@ class BaseAPI:
             varnamearr = None
             varvaluearr = None
         with self._api_context_factory():
-            result = TessBaseAPIInit4(self.baseapi, datapath, language.encode(self.fsencoding), oem, configsarr, configlen, varnamearr, varvaluearr, varlen, set_only_non_debug_params)
+            result = TessBaseAPIInit4(
+                self.baseapi,
+                datapath,
+                language.encode(self.fsencoding),
+                oem,
+                configsarr,
+                configlen,
+                varnamearr,
+                varvaluearr,
+                varlen,
+                set_only_non_debug_params,
+            )
         if result != 0:
-            raise RuntimeError('Tesseract initialization failed')
+            raise RuntimeError("Tesseract initialization failed")
 
     def __del__(self):
         self.release()
@@ -153,7 +247,9 @@ class BaseAPI:
                 raise RuntimeError("unable to get image data with correct bpp")
         bpp = channels * imgarr.itemsize
         with self._api_context_factory():
-            TessBaseAPISetImage(self.baseapi, imgarr.ctypes.data, width, height, bpp, strides[0])
+            TessBaseAPISetImage(
+                self.baseapi, imgarr.ctypes.data, width, height, bpp, strides[0]
+            )
             TessBaseAPISetSourceResolution(self.baseapi, ppi)
 
     def recognize(self):
@@ -170,11 +266,11 @@ class BaseAPI:
     def set_variable(self, name, value):
         with self._api_context_factory():
             if value is None:
-                value = b''
+                value = b""
             elif value is True:
-                value = b'1'
+                value = b"1"
             elif value is False:
-                value = b'0'
+                value = b"0"
             elif isinstance(value, int) or isinstance(value, float):
                 value = str(value).encode()
             elif isinstance(value, str):
@@ -184,19 +280,25 @@ class BaseAPI:
             else:
                 raise TypeError("value must be str, bytes, int, bool, float or None")
             return TessBaseAPISetVariable(self.baseapi, name.encode(), value)
-    
+
     def get_variable(self, name):
         with self._api_context_factory():
             strval = TessBaseAPIGetStringVariable(self.baseapi, name.encode())
             if strval is not None:
                 return strval
             intval = ctypes.c_int()
-            if TessBaseAPIGetBoolVariable(self.baseapi, name.encode(), ctypes.byref(intval)):
+            if TessBaseAPIGetBoolVariable(
+                self.baseapi, name.encode(), ctypes.byref(intval)
+            ):
                 return bool(intval.value)
-            if TessBaseAPIGetIntVariable(self.baseapi, name.encode(), ctypes.byref(intval)):
+            if TessBaseAPIGetIntVariable(
+                self.baseapi, name.encode(), ctypes.byref(intval)
+            ):
                 return intval.value
             floatval = ctypes.c_double()
-            if TessBaseAPIGetDoubleVariable(self.baseapi, name.encode(), ctypes.byref(floatval)):
+            if TessBaseAPIGetDoubleVariable(
+                self.baseapi, name.encode(), ctypes.byref(floatval)
+            ):
                 return floatval.value
             raise KeyError(name)
 
@@ -204,10 +306,16 @@ class BaseAPI:
         with self._api_context_factory():
             TessBaseAPIClear(self.baseapi)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import cv2
+
     print(version)
-    tess = BaseAPI(r"C:\Users\dant\AppData\Local\Tesseract-OCR\tessdata", 'chi_sim', vars={'tessedit_pageseg_mode': '7'})
+    tess = BaseAPI(
+        r"C:\Users\dant\AppData\Local\Tesseract-OCR\tessdata",
+        "chi_sim",
+        vars={"tessedit_pageseg_mode": "7"},
+    )
     tess.set_image(cv2.imread(r"/imgreco/resources/end_operation/end.png"), 144)
     print(tess.get_hocr())
     tess.release()

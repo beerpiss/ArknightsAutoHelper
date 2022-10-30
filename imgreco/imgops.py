@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Union
 
@@ -15,8 +16,10 @@ def enhance_contrast(img, lower=90, upper=None):
     if upper is None:
         upper = np.max(img)
     lut = np.zeros(256, dtype=np.uint8)
-    lut[lower:upper + 1] = np.linspace(0, 255, upper - lower + 1, endpoint=True, dtype=np.uint8)
-    lut[upper + 1:] = 255
+    lut[lower : upper + 1] = np.linspace(
+        0, 255, upper - lower + 1, endpoint=True, dtype=np.uint8
+    )
+    lut[upper + 1 :] = 255
     return Image.fromarray(lut[np.asarray(img, np.uint8)])
 
 
@@ -38,7 +41,7 @@ def image_threshold_mat2img(mat, threshold=127):
         resultmat = mat >= threshold
     lut = np.zeros(256, dtype=np.uint8)
     lut[1:] = 255
-    return Image.fromarray(lut[resultmat.astype(np.uint8)], 'L').convert('1')
+    return Image.fromarray(lut[resultmat.astype(np.uint8)], "L").convert("1")
 
 
 def image_threshold(image, threshold=127):
@@ -46,7 +49,7 @@ def image_threshold(image, threshold=127):
     threshold filter on L channel
     :param threshold: negative value means inverted output
     """
-    grayimg = image.convert('L')
+    grayimg = image.convert("L")
     mat = np.asarray(grayimg)
     return image_threshold_mat2img(mat, threshold)
 
@@ -84,14 +87,14 @@ def cropbox_blackedge2(numimg, value_threshold=127, x_threshold=None):
                 break
     top = 0
     for y in range(thimg.height):
-        row = mat[y, left:right + 1]
+        row = mat[y, left : right + 1]
         if np.any(row):
             top = y
             break
     bottom = top
     emptycnt = 0
     for y in range(top, thimg.height):
-        row = mat[y, left:right + 1]
+        row = mat[y, left : right + 1]
         if np.any(row):
             bottom = y + 1
             emptycnt = 0
@@ -103,6 +106,7 @@ def cropbox_blackedge2(numimg, value_threshold=127, x_threshold=None):
     if left == right or top == bottom:
         return None
     return (left, top, right, bottom)
+
 
 def crop_blackedge2(numimg, value_threshold=127, x_threshold=None):
     box = cropbox_blackedge2(numimg, value_threshold, x_threshold)
@@ -121,7 +125,7 @@ def compare_mse(mat1, mat2, mask=None):
     """max 65025 (255**2) for 8bpc image"""
     mat1 = np.asarray(mat1)
     mat2 = np.asarray(mat2)
-    assert (mat1.shape == mat2.shape)
+    assert mat1.shape == mat2.shape
     diff = mat1.astype(np.float32) - mat2.astype(np.float32)
     if mask is not None:
         mask = np.asarray(mask)
@@ -142,7 +146,7 @@ def compare_ccoeff(img1, img2, mask=None):
     img2 = np.asarray(img2)
     if mask is not None:
         mask = np.asarray(mask)
-    assert (img1.shape == img2.shape)
+    assert img1.shape == img2.shape
     result = cv.matchTemplate(img1, img2, cv.TM_CCOEFF_NORMED, mask=mask)[0, 0]
     return result
 
@@ -164,10 +168,14 @@ def invert_color(img):
     return Image.fromarray(resultmat, img.mode)
 
 
-def match_template(img, template, method=cv.TM_CCOEFF_NORMED, template_mask=None) -> tuple[tuple[int, int], float]:
+def match_template(
+    img, template, method=cv.TM_CCOEFF_NORMED, template_mask=None
+) -> tuple[tuple[int, int], float]:
     """returns *center* point of matched template and matching score"""
     templatemat = np.asarray(template)
-    mtresult = cv.matchTemplate(np.asarray(img), templatemat, method, mask=template_mask)
+    mtresult = cv.matchTemplate(
+        np.asarray(img), templatemat, method, mask=template_mask
+    )
     minval, maxval, minloc, maxloc = cv.minMaxLoc(mtresult)
     if method == cv.TM_SQDIFF_NORMED or method == cv.TM_SQDIFF:
         useloc = minloc
@@ -187,9 +195,17 @@ class FeatureMatchingResult:
     M: np.ndarray = None
 
 
-def match_feature_orb(templ, haystack, *, min_match=10, templ_mask=None, haystack_mask=None, limited_transform=False) -> FeatureMatchingResult:
-    templ = np.asarray(templ.convert('L'))
-    haystack = np.asarray(haystack.convert('L'))
+def match_feature_orb(
+    templ,
+    haystack,
+    *,
+    min_match=10,
+    templ_mask=None,
+    haystack_mask=None,
+    limited_transform=False,
+) -> FeatureMatchingResult:
+    templ = np.asarray(templ.convert("L"))
+    haystack = np.asarray(haystack.convert("L"))
 
     detector = cv.ORB_create(10000)
     descriptor = cv.xfeatures2d.BEBLID_create(0.75)
@@ -199,10 +215,7 @@ def match_feature_orb(templ, haystack, *, min_match=10, templ_mask=None, haystac
     kp1, des1 = descriptor.compute(templ, kp1)
     kp2, des2 = descriptor.compute(haystack, kp2)
 
-    index_params = dict(algorithm=6,
-                        table_number=6,
-                        key_size=12,
-                        multi_probe_level=1)
+    index_params = dict(algorithm=6, table_number=6, key_size=12, multi_probe_level=1)
     search_params = {}
     matcher = cv.FlannBasedMatcher(index_params, search_params)
     # matcher = cv.BFMatcher_create(cv.NORM_HAMMING)
@@ -224,7 +237,9 @@ def match_feature_orb(templ, haystack, *, min_match=10, templ_mask=None, haystac
             M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 4.0)
 
         h, w = templ.shape
-        pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+        pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(
+            -1, 1, 2
+        )
         if limited_transform:
             dst = cv.transform(pts, M)
         else:
@@ -235,9 +250,17 @@ def match_feature_orb(templ, haystack, *, min_match=10, templ_mask=None, haystac
     return result
 
 
-def match_feature(templ, haystack, *, min_match=10, templ_mask=None, haystack_mask=None, limited_transform=False) -> FeatureMatchingResult:
-    templ = np.asarray(templ.convert('L'))
-    haystack = np.asarray(haystack.convert('L'))
+def match_feature(
+    templ,
+    haystack,
+    *,
+    min_match=10,
+    templ_mask=None,
+    haystack_mask=None,
+    limited_transform=False,
+) -> FeatureMatchingResult:
+    templ = np.asarray(templ.convert("L"))
+    haystack = np.asarray(haystack.convert("L"))
 
     detector = cv.SIFT_create()
     kp1, des1 = detector.detectAndCompute(templ, templ_mask)
@@ -268,7 +291,9 @@ def match_feature(templ, haystack, *, min_match=10, templ_mask=None, haystack_ma
             M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 4.0)
 
         h, w = templ.shape
-        pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+        pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(
+            -1, 1, 2
+        )
         if limited_transform:
             dst = cv.transform(pts, M)
         else:
@@ -279,29 +304,32 @@ def match_feature(templ, haystack, *, min_match=10, templ_mask=None, haystack_ma
     return result
 
 
-
 def _find_homography_test(templ, haystack):
     pts = match_feature(templ, haystack).template_corners
-    img2 = cv.polylines(np.asarray(haystack.convert('L')), [np.int32(pts)], True, 0, 2, cv.LINE_AA)
-    img = Image.fromarray(img2, 'L')
+    img2 = cv.polylines(
+        np.asarray(haystack.convert("L")), [np.int32(pts)], True, 0, 2, cv.LINE_AA
+    )
+    img = Image.fromarray(img2, "L")
     print(pts)
     img.show()
 
 
 def compare_region_mse(img, region, template, threshold=3251, logger=None):
-    '''DEPPRECATED: use match_roi instead'''
+    """DEPPRECATED: use match_roi instead"""
     if isinstance(template, str):
         from . import resources
+
         template = resources.load_image_cached(template, img.mode)
     img = img.crop(region)
     mat1, mat2 = uniform_size(img, template)
     mse = compare_mse(mat1, mat2)
     if logger is not None:
         logger.logimage(img)
-        logger.logtext('mse=%f' % mse)
+        logger.logtext("mse=%f" % mse)
     if threshold is not None:
         return mse < threshold
     return mse
+
 
 def pad(img, size, value=None):
     if value is None:

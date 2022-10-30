@@ -4,7 +4,7 @@ from .inspectable import IInspectable, IActivationFactory
 from .types import *
 from .winstring import HSTRING
 
-combase = windll.LoadLibrary('combase.dll')
+combase = windll.LoadLibrary("combase.dll")
 RoGetActivationFactory = combase.RoGetActivationFactory
 RoGetActivationFactory.argtypes = (HSTRING, REFGUID, POINTER(IInspectable))
 RoGetActivationFactory.restype = check_hresult
@@ -26,12 +26,15 @@ def GetActivationFactory(classname, interface=IActivationFactory):
     RoGetActivationFactory(classname, interface.GUID, byref(insp))
     return insp
 
+
 def _ro_init():
     import sys
-    coinit_flags = getattr(sys, 'coinit_flags', 2)
+
+    coinit_flags = getattr(sys, "coinit_flags", 2)
     if coinit_flags & 2:
         RoInitialize(RO_INIT_TYPE.RO_INIT_SINGLETHREADED)
     else:
         RoInitialize(RO_INIT_TYPE.RO_INIT_MULTITHREADED)
+
 
 # _ro_init()

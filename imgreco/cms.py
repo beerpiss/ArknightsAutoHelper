@@ -1,8 +1,10 @@
 from util import cvimage
 from . import resources
 from PIL import ImageCms
-p3_profile = ImageCms.ImageCmsProfile(resources.open_file('DisplayP3.icm'))
-srgb_profile = ImageCms.createProfile('sRGB')
+
+p3_profile = ImageCms.ImageCmsProfile(resources.open_file("DisplayP3.icm"))
+srgb_profile = ImageCms.createProfile("sRGB")
+
 
 def p3_to_srgb_inplace(img: cvimage.Image):
     pil_im, copied = img.to_pil2()

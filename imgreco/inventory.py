@@ -5,7 +5,7 @@ from util import cvimage as Image
 from util.richlog import get_logger
 
 logger = get_logger(__name__)
-exclude_items = {'32001', 'other', '3401'}
+exclude_items = {"32001", "other", "3401"}
 
 # circle size 128x128
 item_circle_radius = 64
@@ -61,13 +61,15 @@ def get_all_item_img_in_screen(screen, use_group_pos=True):
             x2 = x + itemreco_box_size
             if x2 < img_w:
                 for center_y in center_ys:
-                    res.append(get_item_img(screen, cv_screen, dbg_screen, center_x, center_y))
+                    res.append(
+                        get_item_img(screen, cv_screen, dbg_screen, center_x, center_y)
+                    )
     for center_x, center_y, r in circles:
         cv2.circle(dbg_screen, (int(center_x), int(center_y)), int(r), (0, 0, 255), 2)
         if not use_group_pos:
             res.append(get_item_img(screen, cv_screen, dbg_screen, center_x, center_y))
 
-    logger.logimage(Image.fromarray(dbg_screen, 'BGR'))
+    logger.logimage(Image.fromarray(dbg_screen, "BGR"))
     return res
 
 
@@ -76,23 +78,49 @@ def get_item_img(pil_screen, cv_screen, dbg_screen, center_x, center_y):
     x, y = int(center_x - half_box), int(center_y - half_box)
     if x < 0 or x + itemreco_box_size > img_w:
         return None
-    cv_item_img = cv_screen[y:y + itemreco_box_size, x:x + itemreco_box_size]
+    cv_item_img = cv_screen[y : y + itemreco_box_size, x : x + itemreco_box_size]
 
     # use original size for better quantity recognition
     ratio = img_h / pil_screen.height
-    original_item_img = pil_screen.crop((int(x / ratio), int(y / ratio), int((x + itemreco_box_size) / ratio),
-                                         int((y + itemreco_box_size) / ratio)))
-    numimg = imgops.scalecrop(original_item_img, 0.39, 0.705, 0.82, 0.85).convert('L')
-    cv2.rectangle(dbg_screen, (x, y), (x + itemreco_box_size, y + itemreco_box_size), (255, 0, 0), 2)
-    return {'item_img': cv_item_img, 'num_img': numimg,
-            'item_pos': (int((x + itemreco_box_size // 2) / ratio), int((y + itemreco_box_size // 2) / ratio))}
-
+    original_item_img = pil_screen.crop(
+        (
+            int(x / ratio),
+            int(y / ratio),
+            int((x + itemreco_box_size) / ratio),
+            int((y + itemreco_box_size) / ratio),
+        )
+    )
+    numimg = imgops.scalecrop(original_item_img, 0.39, 0.705, 0.82, 0.85).convert("L")
+    cv2.rectangle(
+        dbg_screen,
+        (x, y),
+        (x + itemreco_box_size, y + itemreco_box_size),
+        (255, 0, 0),
+        2,
+    )
+    return {
+        "item_img": cv_item_img,
+        "num_img": numimg,
+        "item_pos": (
+            int((x + itemreco_box_size // 2) / ratio),
+            int((y + itemreco_box_size // 2) / ratio),
+        ),
+    }
 
 
 def get_circles(gray_img, min_radius=56, max_radius=68):
-    circles = cv2.HoughCircles(gray_img, cv2.HOUGH_GRADIENT, 1, 100, param1=128,
-                               param2=30, minRadius=min_radius, maxRadius=max_radius)
+    circles = cv2.HoughCircles(
+        gray_img,
+        cv2.HOUGH_GRADIENT,
+        1,
+        100,
+        param1=128,
+        param2=30,
+        minRadius=min_radius,
+        maxRadius=max_radius,
+    )
     return circles[0]
+
 
 def convert_to_pil(cv_img):
     return Image.fromarray(cv_img)
@@ -102,40 +130,60 @@ def get_all_item_in_screen(screen):
     imgs = get_all_item_img_in_screen(screen)
     item_count_map = {}
     for item_img in imgs:
-        itemimg = Image.fromarray(item_img['item_img'], 'BGR')
+        itemimg = Image.fromarray(item_img["item_img"], "BGR")
         logger.logimage(itemimg)
         itemreco = item.tell_item(itemimg, with_quantity=True)
-        logger.logtext('%r' % itemreco)
-        if itemreco.item_id is None or itemreco.item_id in exclude_items or itemreco.item_type == 'ACTIVITY_ITEM':
+        logger.logtext("%r" % itemreco)
+        if (
+            itemreco.item_id is None
+            or itemreco.item_id in exclude_items
+            or itemreco.item_type == "ACTIVITY_ITEM"
+        ):
             continue
         item_count_map[itemreco.item_id] = itemreco.quantity
         # print(item_id, quantity)
         # show_img(item_img['item_img'])
-    logger.logtext('item_count_map: %s' % item_count_map)
+    logger.logtext("item_count_map: %s" % item_count_map)
     return item_count_map
 
 
-def get_all_item_details_in_screen(screen, exclude_item_ids=None, exclude_item_types=None, only_normal_items=True):
+def get_all_item_details_in_screen(
+    screen, exclude_item_ids=None, exclude_item_types=None, only_normal_items=True
+):
     if exclude_item_ids is None:
         exclude_item_ids = exclude_items
     if exclude_item_types is None:
-        exclude_item_types = {'ACTIVITY_ITEM'}
+        exclude_item_types = {"ACTIVITY_ITEM"}
     imgs = get_all_item_img_in_screen(screen)
     res = []
     for item_img in imgs:
-        itemimg = Image.fromarray(item_img['item_img'], 'BGR')
+        itemimg = Image.fromarray(item_img["item_img"], "BGR")
         logger.logimage(itemimg)
         itemreco = item.tell_item(itemimg, with_quantity=True)
-        logger.logtext('%r' % itemreco)
+        logger.logtext("%r" % itemreco)
         if itemreco.item_id is None:
             continue
-        if itemreco.item_id in exclude_item_ids or itemreco.item_type in exclude_item_types:
+        if (
+            itemreco.item_id in exclude_item_ids
+            or itemreco.item_type in exclude_item_types
+        ):
             continue
-        if only_normal_items and (not itemreco.item_id.isdigit() or len(itemreco.item_id) < 5 or itemreco.item_type != 'MATERIAL'):
+        if only_normal_items and (
+            not itemreco.item_id.isdigit()
+            or len(itemreco.item_id) < 5
+            or itemreco.item_type != "MATERIAL"
+        ):
             continue
-        res.append({'itemId': itemreco.item_id, 'itemName': itemreco.name, 'itemType': itemreco.item_type,
-                    'quantity': itemreco.quantity, 'itemPos': item_img['item_pos']})
-    logger.logtext('res: %s' % res)
+        res.append(
+            {
+                "itemId": itemreco.item_id,
+                "itemName": itemreco.name,
+                "itemType": itemreco.item_type,
+                "quantity": itemreco.quantity,
+                "itemPos": item_img["item_pos"],
+            }
+        )
+    logger.logtext("res: %s" % res)
     return res
 
 
