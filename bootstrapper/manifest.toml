@@ -1,6 +1,6 @@
 version = "1.0.0.0"
-update_page = "https://github.com/beerpiss/ArknightsAutoHelper/releases/tag/bootstrapper-release"
-release_manifest_url = "https://api.github.com/repos/beerpiss/ArknightsAutoHelper/releases"
+update_page = "https://github.com/beerpiss/ArknightsENAutoHelper/releases/tag/bootstrapper-release"
+release_manifest_url = "https://api.github.com/repos/beerpiss/ArknightsENAutoHelper/releases"
 
 [[package]]
 name = "app"
