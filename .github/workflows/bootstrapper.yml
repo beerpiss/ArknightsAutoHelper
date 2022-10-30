@@ -47,11 +47,11 @@ jobs:
         tag_name: "bootstrapper-release"
         prerelease: false
         body: |
-          ## 一键启动器（Windows）
+          ## One-click bootstrapper
 
-          首次运行时将自动下载预先打包的 Python 环境及应用并展开到 exe 所在目录。
+          The first run automatically download and extracts required resources to the same folder as the executable.
           
-          使用 `--update` 参数可自动更新。
+          Use the `--update` flag to automatically update.
 
         files: |
           build/ArknightsAutoHelper.zip
