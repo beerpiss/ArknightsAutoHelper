@@ -143,4 +143,3 @@ packaging/*/obj
 *proj.user
 
 node_modules
-dist
