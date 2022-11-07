@@ -393,12 +393,12 @@ class CombatAddon(AddonBase):
                 return
             dlgtype, ocrresult = imgreco.common.recognize_dialog(screenshot)
             if dlgtype is not None:
-                if dlgtype == "yesno" and "代理指挥" in ocrresult:
-                    self.logger.warning("代理指挥出现失误")
-                    self.frontend.alert("代理指挥", "代理指挥出现失误", "warn")
+                if dlgtype == "yesno" and "Auto Deploy" in ocrresult:
+                    self.logger.warning("Auto Deploy has made a mistake")
+                    self.frontend.alert("Auto Deploy", "Auto Deploy has made a mistake", "warn")
                     smobj.mistaken_delegation = True
                     if app.config.combat.mistaken_delegation.settle:
-                        self.logger.info("以 2 星结算关卡")
+                        self.logger.info("Settled for 2 stars")
                         self.tap_rect(
                             imgreco.common.get_dialog_right_button_rect(screenshot)
                         )
@@ -406,7 +406,7 @@ class CombatAddon(AddonBase):
                         smobj.stop = True
                         return
                     else:
-                        self.logger.info("放弃关卡")
+                        self.logger.info("Retreating from the operation")
                         smobj.request_exit = True
                         self.tap_rect(
                             imgreco.common.get_dialog_left_button_rect(screenshot)
@@ -414,20 +414,20 @@ class CombatAddon(AddonBase):
                         # 关闭失败提示
                         self.wait_for_still_image()
                         return
-                elif dlgtype == "yesno" and "将会恢复" in ocrresult:
+                elif dlgtype == "yesno" and "will be refunded" in ocrresult:
                     if smobj.request_exit:
-                        self.logger.info("确认退出关卡")
+                        self.logger.info("Retreating from the operation")
                         self.tap_rect(
                             imgreco.common.get_dialog_right_button_rect(screenshot)
                         )
                     else:
-                        self.logger.info("发现放弃行动提示，关闭")
+                        self.logger.info("Exiting prompt found, closing")
                         self.tap_rect(
                             imgreco.common.get_dialog_left_button_rect(screenshot)
                         )
                     return
                 else:
-                    self.logger.error("未处理的对话框：[%s] %s", dlgtype, ocrresult)
+                    self.logger.error("Unhandled dialog：[%s] %s", dlgtype, ocrresult)
                     raise RuntimeError("unhandled dialog")
 
             self.logger.info("Operation has not finished")
