@@ -346,7 +346,7 @@ class CombatAddon(AddonBase):
                 and not app.config.combat.mistaken_delegation.settle
             ):
                 if not smobj.request_exit:
-                    self.logger.info("退出关卡")
+                    self.logger.info("Retreating from the operation")
                     self.tap_rect(self.load_roi("combat/exit_button").bbox)
                     smobj.request_exit = True
                     return
@@ -393,7 +393,7 @@ class CombatAddon(AddonBase):
                 return
             dlgtype, ocrresult = imgreco.common.recognize_dialog(screenshot)
             if dlgtype is not None:
-                if dlgtype == "yesno" and "Auto Deploy" in ocrresult:
+                if dlgtype == "yesno" and "Deploy" in ocrresult:
                     self.logger.warning("Auto Deploy has made a mistake")
                     self.frontend.alert("Auto Deploy", "Auto Deploy has made a mistake", "warn")
                     smobj.mistaken_delegation = True
@@ -414,7 +414,7 @@ class CombatAddon(AddonBase):
                         # 关闭失败提示
                         self.wait_for_still_image()
                         return
-                elif dlgtype == "yesno" and "will be refunded" in ocrresult:
+                elif dlgtype == "yesno" and "refunded" in ocrresult:
                     if smobj.request_exit:
                         self.logger.info("Retreating from the operation")
                         self.tap_rect(
