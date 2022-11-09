@@ -43,7 +43,7 @@ FIXED_QUANTITY = [
     "Corrupted Iberian Record",
     "Clearance Permit",
     "Competition Medals",
-    "Rusted Compass"
+    "Rusted Compass",
     "'Imagini'",
 ]
 

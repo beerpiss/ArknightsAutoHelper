@@ -98,7 +98,7 @@ def get_quantity(itemimg):
         richlogger.logimage(numimg)
         from .ocr import acquire_engine_global_cached
 
-        eng = acquire_engine_global_cached("zh-cn")
+        eng = acquire_engine_global_cached("en-us")
         from imgreco.ocr import OcrHint
 
         result = eng.recognize(
